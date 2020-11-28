@@ -14,6 +14,38 @@ Renderer::Renderer(unsigned int width, unsigned int height, Scalar& background_c
     duration_(0.0)
 {}
 
+Renderer::~Renderer(){};
+
+void Renderer::StartClock(){
+    if(!is_clock_running_){
+        is_clock_running_ = true;
+        start_time_ = getTickCount();            
+    }
+}
+
+void Renderer::StopClock(){
+    if(is_clock_running_){
+        is_clock_running_ = false;
+        end_time_ = getTickCount();
+        duration_ += end_time_ - start_time_;
+    }
+}
+
+void Renderer::ClearTimeCounter(){
+    if(is_clock_running_){
+        StopClock();
+    }
+    duration_ = 0;
+}
+
+void Renderer::GetTimeCost(){
+    if(is_clock_running_){
+            StopClock();
+            StartClock();
+    }
+    cout<<"time cost: "<<duration_ * time_per_tick_ *1000<<" ms\n";
+}
+
 void Renderer::ShowImage(std::string window_name){
     StopClock();
     namedWindow(window_name);

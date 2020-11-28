@@ -4,7 +4,6 @@
 #include<opencv2/opencv.hpp>
 
 namespace YeahooQAQ{
-
 using namespace cv;
 using namespace std;
 
@@ -14,38 +13,16 @@ public:
     ~Renderer(){};
 
 public:
+    void StartClock();
+    void StopClock();
+    void ClearTimeCounter();
+    void GetTimeCost();
+    
+public:
     void ShowImage(string window_name);
     void SaveImage(string filename);
     void ClearImage(){
         canvas_ = Mat(canvas_height_, canvas_width_, CV_64FC4, background_color_);
-    }
-
-public:
-    void StartClock(){
-        if(!is_clock_running_){
-            is_clock_running_ = true;
-            start_time_ = getTickCount();            
-        }
-    }
-    void StopClock(){
-        if(is_clock_running_){
-            is_clock_running_ = false;
-            end_time_ = getTickCount();
-            duration_ += end_time_ - start_time_;
-        }
-    }
-    void ClearTimeCounter(){
-        if(is_clock_running_){
-            StopClock();
-        }
-        duration_ = 0;
-    }
-    void GetTimeCost(){
-        if(is_clock_running_){
-                StopClock();
-                StartClock();
-        }
-        cout<<"time cost: "<<duration_ * time_per_tick_ *1000<<" ms\n";
     }
 
 public:

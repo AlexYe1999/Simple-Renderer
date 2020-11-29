@@ -3,18 +3,24 @@ namespace YeahooQAQ{
 
 Renderer::Renderer(unsigned int width, unsigned int height, Scalar& background_color)
     :
-    canvas_width_(width),
-    canvas_height_(height),
-    background_color_(background_color),
-    canvas_(height, width, CV_64FC4, background_color),
     time_per_tick_(1.0/getTickFrequency()),
     is_clock_running_(false),
     start_time_(0.0),
     end_time_(0.0),
-    duration_(0.0)
+    duration_(0.0),
+    canvas_width_(width),
+    canvas_height_(height),
+    background_color_(background_color),
+    canvas_(height, width, CV_64FC4, background_color),
+    model_ptr_(nullptr)
 {}
 
-Renderer::~Renderer(){};
+Renderer::~Renderer(){
+    if(model_ptr_ != nullptr){
+        delete model_ptr_;
+        model_ptr_ = nullptr;
+    }
+};
 
 void Renderer::StartClock(){
     if(!is_clock_running_){
@@ -71,16 +77,54 @@ void Renderer::SaveImage(std::string filename){
             cout<<"quit\n";
     }
 }
+    
+bool Renderer::LoadModel(string filename){
+    if(model_ptr_ == nullptr){
+        model_ptr_ = new Model(filename);
+    }
+    else{
+        cerr <<"Model has been loaded\n";
+        return false;
+    }
 
-void Renderer::DrawLine(Point2i p1, Point2i p2, Scalar& color){
-    bool reverse = false;
+    return true;
+}
+
+bool Renderer::Show2DModel(const Scalar& color){
+    if(model_ptr_ == nullptr){
+        cerr << "Model heven't been loaded\n";
+        return false;
+    }
+    cout<<"rendering model\n";
+    const int surfaces_num = model_ptr_->GetSurfeceSize();
+    for(int index = 0; index < surfaces_num; index++){
+        vector<int> indexes = model_ptr_->GetSurfece(index);
+        const int index_num = indexes.size();
+        for(int i = 0; i < index_num; i++){
+            Vec3f v1 = model_ptr_->GetVertex(indexes[i]);
+            Vec3f v2 = model_ptr_->GetVertex(indexes[(i+1)%index_num]);
+            int x1 = (v1.x * 0.9f + 1.0f) * canvas_width_ * 0.5f;
+            int y1 = (-v1.y * 0.9f + 1.0f) * canvas_height_ * 0.5f;
+            int x2 = (v2.x  * 0.9f + 1.0f) * canvas_width_ * 0.5f;
+            int y2 = (-v2.y  * 0.9f + 1.0f) * canvas_height_ * 0.5f;
+            DrawLine(Point2i(x1, y1), Point2i(x2, y2), color);
+        }
+
+    }
+
+    return true;
+}
+
+
+bool Renderer::DrawLine(Point2i p1, Point2i p2, const Scalar& color){
+    bool is_reverse = false;
     if(p1.x > p2.x){
         swap(p1, p2);
     }
     if(abs(p1.x - p2.x) < abs(p1.y - p2.y)){
         swap(p1.x, p1.y);
         swap(p2.x, p2.y);
-        reverse = true;
+        is_reverse = true;
     }
 
     int dx = p2.x - p1.x;
@@ -91,7 +135,7 @@ void Renderer::DrawLine(Point2i p1, Point2i p2, Scalar& color){
     int error = 0;
 
     for(int x1 = p1.x; x1 < x2; x1 += 1){ 
-        if(reverse){
+        if(is_reverse){
             canvas_.at<Scalar>(x1, y) = color;            
         }
         else{
@@ -104,6 +148,7 @@ void Renderer::DrawLine(Point2i p1, Point2i p2, Scalar& color){
         }
     }
 
+    return true;
 }
 
 

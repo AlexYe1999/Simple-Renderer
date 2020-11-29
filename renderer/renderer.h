@@ -2,6 +2,7 @@
 #define RENDERER_H_
 #include<string>
 #include<opencv2/opencv.hpp>
+#include"../model/model.h"
 
 namespace YeahooQAQ{
 using namespace cv;
@@ -10,7 +11,7 @@ using namespace std;
 class Renderer{
 public:
     Renderer(unsigned int width, unsigned int height, Scalar& background_color);
-    ~Renderer(){};
+    ~Renderer();
 
 public:
     void StartClock();
@@ -26,7 +27,11 @@ public:
     }
 
 public:
-    void DrawLine(Point2i p1, Point2i p2, Scalar& color);
+    bool LoadModel(string filename);
+    bool Show2DModel(const Scalar& color);
+
+public:
+    bool DrawLine(Point2i p1, Point2i p2, const  Scalar& color);
 
 private:
     const  double time_per_tick_;
@@ -40,6 +45,9 @@ private:
     const unsigned int canvas_height_;
     Scalar background_color_;
     Mat canvas_;
+
+private:
+    Model* model_ptr_;
 
 };
 

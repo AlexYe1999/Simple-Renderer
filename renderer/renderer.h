@@ -5,12 +5,11 @@
 #include"../model/model.h"
 
 namespace YeahooQAQ{
-using namespace cv;
 using namespace std;
 
 class Renderer{
 public:
-    Renderer(unsigned int width, unsigned int height, Scalar& background_color);
+    Renderer(unsigned int width, unsigned int height, cv::Scalar& background_color);
     ~Renderer();
 
 public:
@@ -23,15 +22,22 @@ public:
     void ShowImage(string window_name);
     void SaveImage(string filename);
     void ClearImage(){
-        canvas_ = Mat(canvas_height_, canvas_width_, CV_64FC4, background_color_);
+        canvas_ = cv::Mat(canvas_height_, canvas_width_, CV_64FC4, background_color_);
     }
 
 public:
     bool LoadModel(string filename);
-    bool Show2DModel(const Scalar& color);
+    bool ShowWireModel(const cv::Scalar& color, const float max_size);
+    bool ShowFlatModel(const cv::Scalar& color, const float max_size);
 
 public:
-    bool DrawLine(Point2i p1, Point2i p2, const  Scalar& color);
+    bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
+    bool Draw2DRectangle(const Vec2f vertex[3], const cv::Scalar& color);
+
+private:
+    Vec3f BarycentricInterpolation(const Vec2f vertex[3]);
+    void FindBoundingBox(const Vec2f vertex[3], Vec2f bbox[2]);
+    bool IsInsideTriangle(const Vec2f vertex[3], const Vec2f& pixel);
 
 private:
     const  double time_per_tick_;
@@ -43,8 +49,8 @@ private:
 private: 
     const unsigned int canvas_width_;
     const unsigned int canvas_height_;
-    Scalar background_color_;
-    Mat canvas_;
+    cv::Scalar background_color_;
+    cv::Mat canvas_;
 
 private:
     Model* model_ptr_;

@@ -4,6 +4,6 @@ project(main)
 
 add_subdirectory(renderer)
 add_subdirectory(model)
-add_executable(DrawLine main.cpp)
+add_executable(Rendering main.cpp)
 
-target_link_libraries(DrawLine Renderer Model)
+target_link_libraries(Rendering Renderer Model)

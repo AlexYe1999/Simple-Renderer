@@ -36,7 +36,7 @@ Model::Model(string& filename){
 
     }
     cout<<"Model: \n";
-    cout<<"  v: "<< vertices_.size() <<"\n  surfeace: "<<surfaces_.size()<<"\n\n";
+    cout<<"  v: "<< vertices_.size() <<"\n  surface: "<<surfaces_.size()<<"\n\n";
 }
 
 Model::~Model(){};

@@ -17,6 +17,8 @@ struct Vec2{
     inline Vec2<T> operator +(const Vec2<T>& vec) const { return Vec2<T>(x + vec.x, y + vec.y);}
     inline Vec2<T> operator -(const Vec2<T>& vec) const { return Vec2<T>(x - vec.x, y - vec.y);}
     inline Vec2<T> operator *(const float f) const { return Vec2<T>(x * f, y * f);}
+    inline T operator *(const Vec2<T>& vec) const {return T(x*vec.x + y*vec.y);}    
+    inline T cross(const Vec2<T>& vec) const {return T(x * vec.y - y * vec.x);};
     template<typename> friend ostream& operator <<(ostream& os, const Vec2<T>& vec2);
 };
 
@@ -32,6 +34,8 @@ struct Vec3{
     inline Vec3<T> operator +(const Vec3<T>& vec) const { return Vec3<T>(x + vec.x, y + vec.y, z + vec.z);}
     inline Vec3<T> operator -(const Vec3<T>& vec) const {return Vec3<T>(x - vec.x, y - vec.y, z - vec.z);}
     inline Vec3<T> operator *(const float& f) const {return Vec3<T>(f * x, f * y, f * z);}
+    inline T operator *(const Vec3<T>& vec) const {return T(x * vec.x + y * vec.y + z * vec.z);}    
+    inline T cross(const Vec3<T>& vec) const {return Vec3<T>(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);};
     template<typename> friend ostream& operator <<(ostream& os, const Vec3<T>& vec3);
 };
 

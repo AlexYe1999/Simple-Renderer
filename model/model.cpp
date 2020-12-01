@@ -20,7 +20,7 @@ Model::Model(string& filename){
         if(!line.compare(0, 2, "v ")){
             Vec3f v;
             iss >> trash;            
-            for(int i = 0; i < 3; i++){ iss >> v.col[i]; }
+            for(int i = 0; i < 3; i++){ iss >> v[i]; }
             vertices_.push_back(v);
         }
         else if(!line.compare(0, 2, "f ")){

@@ -12,13 +12,20 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     canvas_height_(height),
     background_color_(background_color),
     canvas_(height, width, CV_64FC4, background_color),
-    model_ptr_(nullptr)
-{}
+    model_ptr_(nullptr),
+    z_buffer_(nullptr)
+{
+    z_buffer_ = new float[width* height];
+}
 
 Renderer::~Renderer(){
     if(model_ptr_ != nullptr){
         delete model_ptr_;
         model_ptr_ = nullptr;
+    }
+    if(z_buffer_ = nullptr){
+        delete[] z_buffer_;
+        z_buffer_ = nullptr;
     }
 };
 
@@ -61,6 +68,7 @@ void Renderer::ShowImage(std::string window_name){
 }
 
 void Renderer::SaveImage(std::string filename){
+    cv::flip(canvas_, canvas_, 0);
     cv::namedWindow("OutputImage");
     cv::imshow("OutputImage", canvas_);
     cout<<"Push s to save image\n";
@@ -95,7 +103,7 @@ bool Renderer::ShowWireModel(const cv::Scalar& color, const float max_size){
         cerr << "Model heven't been loaded\n";
         return false;
     }
-    cout<<"rendering model...\n";
+    cout<<"rendering wire model...\n";
     const int surfaces_num = model_ptr_->GetSurfeceSize();
     for(int index = 0; index < surfaces_num; index++){
         vector<int> indexes = model_ptr_->GetSurfece(index);
@@ -103,9 +111,9 @@ bool Renderer::ShowWireModel(const cv::Scalar& color, const float max_size){
             Vec3f v1 = model_ptr_->GetVertex(indexes[i]);
             Vec3f v2 = model_ptr_->GetVertex(indexes[(i+1)%3]);
             int x1 = (v1.x * max_size + max_size) * canvas_width_ * 0.5f;
-            int y1 = (-v1.y * max_size + max_size) * canvas_height_ * 0.5f;
+            int y1 = (v1.y * max_size + max_size) * canvas_height_ * 0.5f;
             int x2 = (v2.x * max_size + max_size) * canvas_width_ * 0.5f;
-            int y2 = (-v2.y * max_size + max_size) * canvas_height_ * 0.5f;
+            int y2 = (v2.y * max_size + max_size) * canvas_height_ * 0.5f;
             Draw2DLine(Vec2i(x1, y1), Vec2i(x2, y2), color);
         }
 
@@ -116,8 +124,22 @@ bool Renderer::ShowWireModel(const cv::Scalar& color, const float max_size){
 
 
 bool Renderer::ShowFlatModel(const cv::Scalar& color, const float max_size){
-
-
+    if(model_ptr_ == nullptr){
+        cerr << "Model heven't been loaded\n";
+        return false;
+    }
+    cout<<"rendering flat model...\n";
+    Vec3f fix(0.99f, 0.99f, 0.99f);
+    const int surfaces_num = model_ptr_->GetSurfeceSize();
+    for(int index = 0; index < surfaces_num; index++){
+        vector<int> indexes = model_ptr_->GetSurfece(index);
+            Vec3f vertex[3];
+            vertex[0] = (model_ptr_->GetVertex(indexes[0]) + fix) * canvas_width_ * 0.5f;
+            vertex[1]  = (model_ptr_->GetVertex(indexes[1]) + fix) * canvas_width_ * 0.5f;
+            vertex[2] =  (model_ptr_->GetVertex(indexes[2]) + fix) * canvas_width_ * 0.5f;
+            //Draw2DRectangle(vertex , cv::Scalar(rand()%255, rand()%255, rand()%255));
+            Draw2DRectangle(vertex , color);
+    }
 
 }
 
@@ -157,7 +179,7 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
     return true;
 }
 
-bool Renderer::Draw2DRectangle(const Vec2f vertex[3], const cv::Scalar& color){
+bool Renderer::Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color){
 
     Vec2f bbox[2]; 
     FindBoundingBox(vertex, bbox);
@@ -174,12 +196,12 @@ bool Renderer::Draw2DRectangle(const Vec2f vertex[3], const cv::Scalar& color){
     return true;
 }
 
-Vec3f Renderer::BarycentricInterpolation(const Vec2f vec[3]){
+Vec3f Renderer::BarycentricInterpolation(const Vec3f vec[3]){
 
 
 }
 
-void Renderer::FindBoundingBox(const Vec2f vertex[3], Vec2f bbox[2]){
+void Renderer::FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]){
     bbox[0].x = 0x7F800000;
     bbox[0].y = 0x7F800000;
     bbox[1].x = -1.0f;
@@ -199,18 +221,23 @@ void Renderer::FindBoundingBox(const Vec2f vertex[3], Vec2f bbox[2]){
             bbox[1].y = vertex[i].y;
         }
     }
-    cout<<"Bounding box: ("<<bbox[0].x<<" , "<<bbox[0].y<<") ("<<bbox[1].x<< " , " <<bbox[1].y<<")\n";
 }
 
-bool Renderer::IsInsideTriangle(const Vec2f vertex[3], const Vec2f& pixel){
+bool Renderer::IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel){
     int count = 0;
+    Vec2f vertex2[3] = {
+        {vertex[0].x, vertex[0].y},
+        {vertex[1].x, vertex[1].y},
+        {vertex[2].x, vertex[2].y}
+    };
     for(int i = 0; i < 3; i++){
-        Vec2f v1 = vertex[(i+1)%3] - vertex[i];
-        Vec2f v2 = pixel - vertex[i];
+        Vec2f v1 = vertex2[(i+1)%3] - vertex2[i];
+        Vec2f v2 = pixel - vertex2[i];
+
         float dot = v1.cross(v2);
         if(dot > 0.0f) count++;
     }
-    if(count == 3 || count == 0){
+    if( count == 0 || count == 3 || count == 1){
         return true;
     }
     return false;

@@ -32,12 +32,17 @@ public:
 
 public:
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
-    bool Draw2DRectangle(const Vec2f vertex[3], const cv::Scalar& color);
+    bool Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color);
 
 private:
-    Vec3f BarycentricInterpolation(const Vec2f vertex[3]);
-    void FindBoundingBox(const Vec2f vertex[3], Vec2f bbox[2]);
-    bool IsInsideTriangle(const Vec2f vertex[3], const Vec2f& pixel);
+    void FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]);
+    bool IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel);
+    Vec3f BarycentricInterpolation(const Vec3f vertex[3]);
+
+private:
+    void SetModelMatrix();
+    void SetViewMatrix();
+    void SetProjectionMatrix();
 
 private:
     const  double time_per_tick_;
@@ -54,7 +59,7 @@ private:
 
 private:
     Model* model_ptr_;
-
+    float* z_buffer_;
 };
 
 }

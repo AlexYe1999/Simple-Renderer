@@ -7,19 +7,14 @@ using namespace YeahooQAQ;
 int main(int argc, char* argv[]){
     string filename = "./Output.jpg";
     cv::Scalar background_color(255, 255, 255);
-    cv::Scalar color(0, 0, 0);
+    cv::Scalar color(0, 0, 255);
     Renderer randerer(1000, 1000, background_color);
+    randerer.LoadModel("/home/yeahoo/桌面/TinyRenderer/test_model/spot_triangulated_good.obj");
+
     randerer.StartClock();
-
-    Vec2f vertex[3] = {
-        {50.0f, 50.0f},
-        {600.0f, 70.0f},
-        {700.0f, 300.0f}
-    };
-
-    randerer.Draw2DRectangle(vertex, color);
+    randerer.ShowFlatModel(color, 0.99f);
 
     randerer.GetTimeCost();
-    randerer.SaveImage(filename);        
+    randerer.SaveImage(filename);   
     return 0;
 }

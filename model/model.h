@@ -15,15 +15,18 @@ public:
     ~Model();
     
 public: 
-    int GetVertexSize() const{return static_cast<int>(vertices_.size());};
-    int GetSurfeceSize() const{return static_cast<int>(surfaces_.size());};
-    Vec3f GetVertex(const int index) const{return vertices_[index];}    
-    vector<int> GetSurfece(const int index) const{return surfaces_[index];};
+    const int GetVertexSize() const{return static_cast<int>(vertices_.size());};
+    const int GetSurfeceSize() const{return static_cast<int>(surfaces_.size());};
+    const Vec3f& GetVertex(const int index) const{return vertices_[index];}    
+    const Vec3f& GetNormal(const int index) const{return normals_[index];}    
+    const Vec2f& GetTexture(const int index) const{return textures_[index];}    
+    const vector<Vec3f>& GetSurfece(const int index) const{return surfaces_[index];};
 
 private:
+    vector<vector<Vec3f>> surfaces_;
     vector<Vec3f> vertices_;
-    vector<vector<int>> surfaces_;
-
+    vector<Vec3f> normals_;
+    vector<Vec2f> textures_;
 };
 
 

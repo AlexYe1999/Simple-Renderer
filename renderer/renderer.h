@@ -27,9 +27,10 @@ public:
 
 public:
     bool LoadModel(string filename);
-    bool ShowWireModel(const cv::Scalar& color, const float max_size);
-    bool ShowFlatModel(const cv::Scalar& color, const float max_size);
-
+    bool RenderWireModel(const cv::Scalar& color, const float max_size);
+    bool RenderFlatModel(const cv::Scalar& color, const float max_size);
+    bool RenderFlatModel(const cv::Scalar& color, const float max_size);
+    
 public:
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
     bool Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color);

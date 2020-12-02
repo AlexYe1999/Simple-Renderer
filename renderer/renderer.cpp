@@ -71,7 +71,7 @@ void Renderer::SaveImage(std::string filename){
     cv::flip(canvas_, canvas_, 0);
     cv::namedWindow("OutputImage");
     cv::imshow("OutputImage", canvas_);
-    cout<<"Push s to save image\n";
+    cout<<"\nPush s to save image\n";
     int k = cv::waitKey(0);
     if(k == 's'){
         if(imwrite(filename, canvas_)){
@@ -98,18 +98,18 @@ bool Renderer::LoadModel(string filename){
     return true;
 }
 
-bool Renderer::ShowWireModel(const cv::Scalar& color, const float max_size){
+bool Renderer::RenderWireModel(const cv::Scalar& color, const float max_size){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
         return false;
     }
-    cout<<"rendering wire model...\n";
+    cout<<"rendering wire ...\n";
     const int surfaces_num = model_ptr_->GetSurfeceSize();
     for(int index = 0; index < surfaces_num; index++){
-        vector<int> indexes = model_ptr_->GetSurfece(index);
+        const vector<Vec3f>& surfaces = model_ptr_->GetSurfece(index);
         for(int i = 0; i < 3; i++){
-            Vec3f v1 = model_ptr_->GetVertex(indexes[i]);
-            Vec3f v2 = model_ptr_->GetVertex(indexes[(i+1)%3]);
+            const Vec3f& v1 = model_ptr_->GetVertex(surfaces[i].vertex);
+            const Vec3f& v2 = model_ptr_->GetVertex(surfaces[(i+1)%3].vertex);
             int x1 = (v1.x * max_size + max_size) * canvas_width_ * 0.5f;
             int y1 = (v1.y * max_size + max_size) * canvas_height_ * 0.5f;
             int x2 = (v2.x * max_size + max_size) * canvas_width_ * 0.5f;
@@ -123,22 +123,23 @@ bool Renderer::ShowWireModel(const cv::Scalar& color, const float max_size){
 }
 
 
-bool Renderer::ShowFlatModel(const cv::Scalar& color, const float max_size){
+bool Renderer::RenderFlatModel(const cv::Scalar& color, const float max_size){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
         return false;
     }
-    cout<<"rendering flat model...\n";
-    Vec3f fix(0.99f, 0.99f, 0.99f);
+    cout<<"rendering flat ...\n";
+    Vec3f fix(max_size, max_size, max_size);
     const int surfaces_num = model_ptr_->GetSurfeceSize();
     for(int index = 0; index < surfaces_num; index++){
-        vector<int> indexes = model_ptr_->GetSurfece(index);
+        vector<Vec3f> indexes = model_ptr_->GetSurfece(index);
             Vec3f vertex[3];
-            vertex[0] = (model_ptr_->GetVertex(indexes[0]) + fix) * canvas_width_ * 0.5f;
-            vertex[1]  = (model_ptr_->GetVertex(indexes[1]) + fix) * canvas_width_ * 0.5f;
-            vertex[2] =  (model_ptr_->GetVertex(indexes[2]) + fix) * canvas_width_ * 0.5f;
-            //Draw2DRectangle(vertex , cv::Scalar(rand()%255, rand()%255, rand()%255));
-            Draw2DRectangle(vertex , color);
+            vertex[0] = (model_ptr_->GetVertex(indexes[0].vertex) + fix) * canvas_width_ * 0.5f;
+            vertex[1]  = (model_ptr_->GetVertex(indexes[1].vertex) + fix) * canvas_width_ * 0.5f;
+            vertex[2] =  (model_ptr_->GetVertex(indexes[2].vertex) + fix) * canvas_width_ * 0.5f;
+            //Draw2DRectangle(vertex , color);
+
+            Draw2DRectangle(vertex , cv::Scalar(rand()%100 * 0.01, rand()%100 * 0.01, rand()%100 * 0.01));
     }
 
 }
@@ -187,12 +188,11 @@ bool Renderer::Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color){
     int max_y = static_cast<int>(bbox[1].y) + 1;
     for(int y = bbox[0].y; y < max_y; y++){
         for(int x = bbox[0].x; x < max_x; x++){
-            if(IsInsideTriangle(vertex, Vec2f(x, y))){ 
-                canvas_.at<cv::Scalar>(y, x) = color;       
+            if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
+                canvas_.at<cv::Scalar>(y, x) = color;
             }
         }
     }
-
     return true;
 }
 
@@ -202,12 +202,12 @@ Vec3f Renderer::BarycentricInterpolation(const Vec3f vec[3]){
 }
 
 void Renderer::FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]){
-    bbox[0].x = 0x7F800000;
-    bbox[0].y = 0x7F800000;
-    bbox[1].x = -1.0f;
-    bbox[1].y = -1.0f;
+    bbox[0].x = vertex[2].x;
+    bbox[0].y = vertex[2].y;
+    bbox[1].x = vertex[2].x;
+    bbox[1].y = vertex[2].y;
 
-    for(int i = 0; i < 3; i++ ){
+    for(int i = 0; i < 2; i++ ){
         if(vertex[i].x < bbox[0].x){
             bbox[0].x = vertex[i].x;
         }
@@ -221,6 +221,7 @@ void Renderer::FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]){
             bbox[1].y = vertex[i].y;
         }
     }
+
 }
 
 bool Renderer::IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel){
@@ -237,7 +238,7 @@ bool Renderer::IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel){
         float dot = v1.cross(v2);
         if(dot > 0.0f) count++;
     }
-    if( count == 0 || count == 3 || count == 1){
+    if( count == 0 || count == 3){
         return true;
     }
     return false;

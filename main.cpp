@@ -6,13 +6,16 @@ using namespace YeahooQAQ;
 
 int main(int argc, char* argv[]){
     string filename = "./Output.jpg";
-    cv::Scalar background_color(255, 255, 255);
-    cv::Scalar color(0, 0, 255);
+    cv::Scalar background_color(1.0, 1.0, 1.0);
+    cv::Scalar flat_color(0.5, 0.5, 0.5);
+    cv::Scalar wire_color(0.0, 0.0, 0.0);
     Renderer randerer(1000, 1000, background_color);
-    randerer.LoadModel("/home/yeahoo/桌面/TinyRenderer/test_model/spot_triangulated_good.obj");
+    randerer.LoadModel("../test_model/cow.obj");
 
     randerer.StartClock();
-    randerer.ShowFlatModel(color, 0.99f);
+
+    randerer.RenderFlatModel(flat_color, 1.0f);    
+    randerer.RenderWireModel(wire_color, 1.0f);
 
     randerer.GetTimeCost();
     randerer.SaveImage(filename);   

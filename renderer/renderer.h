@@ -37,7 +37,6 @@ public:
 
 public:
     bool RenderPointModel(const  cv::Scalar& color,  const float max_size);
-    bool RenderFlatModel(const float max_size);    
     bool RenderWireModel();
     bool RenderModel();
 

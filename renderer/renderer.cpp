@@ -69,14 +69,15 @@ void Renderer::GetTimeCost(){
 
 void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms){
     StopClock();
+    cv::Mat image;
+    flip(canvas_, image, 0);
     cv::namedWindow(window_name);
-    imshow(window_name, canvas_);
+    imshow(window_name, image);
     cv::waitKey(delay_ms);
     StartClock();
 }
 
 void Renderer::SaveImage(std::string filename){
-    cv::flip(canvas_, canvas_, 0);
     cv::namedWindow("OutputImage");
     cv::imshow("OutputImage", canvas_);
     cout<<"\nPush s to save image\n";
@@ -251,30 +252,6 @@ bool Renderer::RenderWireModel(){
     return true;
 }
 
-
-bool Renderer::RenderFlatModel(const float max_size){
-    if(model_ptr_ == nullptr){
-        cerr << "Model heven't been loaded\n";
-        return false;
-    }
-    cout<<"rendering flat ...\n";
-    Vec3f fix(max_size, max_size, max_size);
-    const int surfaces_num = model_ptr_->GetSurfeceSize();
-    for(int index = 0; index < surfaces_num; index++){
-        vector<Vec3f> indexes = model_ptr_->GetSurfece(index);
-            Vec3f vertex[3];
-            vertex[0] = (model_ptr_->GetVertex(indexes[0].vertex) + fix) * canvas_width_ * 0.5f;
-            vertex[1]  = (model_ptr_->GetVertex(indexes[1].vertex) + fix) * canvas_width_ * 0.5f;
-            vertex[2] =  (model_ptr_->GetVertex(indexes[2].vertex) + fix) * canvas_width_ * 0.5f;
-            //Draw2DRectangle(vertex , color);
-            Draw2DRectangle(vertex , cv::Scalar(rand()%100 * 0.01, rand()%100 * 0.01, rand()%100 * 0.01));
-            cv::Mat flip;
-            cv::flip(canvas_, flip, 0);
-            cv::imshow("Processing", flip);
-            cv::waitKey(1);
-    }
-}
-
 bool Renderer::RenderModel(){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
@@ -323,10 +300,7 @@ bool Renderer::RenderModel(){
             }
         }
         Draw2DRectangle(vertex , cv::Scalar(rand()%100 * 0.01, rand()%100 * 0.01, rand()%100 * 0.01));
-
     }
-
-
 
 }
 
@@ -367,7 +341,7 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
 }
 
 bool Renderer::Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color){
-
+    
     Vec2f bbox[2]; 
     FindBoundingBox(vertex, bbox);
     int max_x = static_cast<int>(bbox[1].x) + 1;

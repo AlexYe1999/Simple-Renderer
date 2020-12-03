@@ -3,13 +3,18 @@
 namespace YeahooQAQ{
 using namespace std;
 
-Model::Model(string& filename){
+Model::Model(string& filename)
+    :
+    surfaces_(), 
+    vertices_(),
+    normals_(), 
+    textures_(){
     ifstream in;
     in.open(filename, ifstream::in);
     if(in.fail()){
         cout<<"Initialazation of model is failed\n";
         return;
-    }
+}
     
     string line;
     char trash;

@@ -9,15 +9,29 @@ int main(int argc, char* argv[]){
     cv::Scalar background_color(1.0, 1.0, 1.0);
     cv::Scalar flat_color(0.5, 0.5, 0.5);
     cv::Scalar wire_color(0.0, 0.0, 0.0);
-    Renderer randerer(1000, 1000, background_color);
-    randerer.LoadModel("../test_model/cow.obj");
+    Renderer renderer(1000, 1000, background_color);
 
-    randerer.StartClock();
+    renderer.LoadModel("../test_model/cow.obj");
 
-    randerer.RenderFlatModel(flat_color, 1.0f);    
-    randerer.RenderWireModel(wire_color, 1.0f);
+    Vec3f eye_pos(0.0f, 0.0f, 5.0f);
+    float theta_per_second = 15.0f; 
+    int count = 0;
+    renderer.SetViewMatrix(eye_pos);
+    renderer.SetProjectionMatrix(45.0f, 1.0f, 0.9f, 2.0f);
+    while(true){
+        renderer.StartClock();
+        renderer.SetModelMatrix(count * theta_per_second, 0.0f, 0.0f);
 
-    randerer.GetTimeCost();
-    randerer.SaveImage(filename);   
+        renderer.RenderModel();
+        renderer.RenderWireModel();
+
+        renderer.GetTimeCost();
+        renderer.ClearTimeCounter();
+        renderer.ShowImage("Rendering", 100);
+        renderer.ClearCanvas();
+        count++;
+    }
+
+    renderer.SaveImage(filename);
     return 0;
 }

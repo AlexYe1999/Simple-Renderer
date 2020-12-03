@@ -19,18 +19,28 @@ public:
     void GetTimeCost();
     
 public:
-    void ShowImage(string window_name);
+    void ShowImage(string window_name, const unsigned short delay_ms);
     void SaveImage(string filename);
-    void ClearImage(){
+    void ClearCanvas(){
         canvas_ = cv::Mat(canvas_height_, canvas_width_, CV_64FC4, background_color_);
     }
 
 public:
     bool LoadModel(string filename);
-    bool RenderWireModel(const cv::Scalar& color, const float max_size);
-    bool RenderFlatModel(const cv::Scalar& color, const float max_size);
-    bool RenderFlatModel(const cv::Scalar& color, const float max_size);
-    
+
+public:
+    void SetModelMatrix(const float x_axis, const float y_axis, const float z_axis);
+    void SetViewMatrix(const Vec3f& eye_pos);
+    void SetProjectionMatrix(const float eye_fov, 
+                                                        const float aspect_ratio,
+                                                        const float zNear, float zFar);
+
+public:
+    bool RenderPointModel(const  cv::Scalar& color,  const float max_size);
+    bool RenderFlatModel(const float max_size);    
+    bool RenderWireModel();
+    bool RenderModel();
+
 public:
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
     bool Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color);
@@ -39,11 +49,6 @@ private:
     void FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]);
     bool IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel);
     Vec3f BarycentricInterpolation(const Vec3f vertex[3]);
-
-private:
-    void SetModelMatrix();
-    void SetViewMatrix();
-    void SetProjectionMatrix();
 
 private:
     const  double time_per_tick_;
@@ -60,7 +65,21 @@ private:
 
 private:
     Model* model_ptr_;
+
+private:
     float* z_buffer_;
+    vector<vector<Vec3f>> surfaces_;
+    vector<Vec3f> vertices_;
+    vector<Vec3f> normals_;
+    vector<cv::Scalar> colors_;    
+    vector<Vec2f> textures_;
+
+
+private:
+    Matrix4f model_matrix_;
+    Matrix4f view_matrix_;
+    Matrix4f projection_matrix_;
+
 };
 
 }

@@ -24,11 +24,11 @@ Model::Model(string& filename)
         istringstream iss(line.c_str());
         if(!line.compare(0, 2, "v ")){
             Vec3f v;
-            iss >> trash;            
+            iss >> trash;
             for(int i = 0; i < 3; i++){ iss >> v[i];}
             vertices_.push_back(v);
         }
-        else if(!line.compare(0, 3, "vn ")){ 
+        else if(!line.compare(0, 3, "vn ")){
             Vec3f vn;
             iss >> trash >> trash;
             for(int i = 0; i < 3; i++){ iss >> vn[i];}
@@ -41,8 +41,8 @@ Model::Model(string& filename)
             textures_.push_back(vt);
         }
         else if(!line.compare(0, 2, "f ")){
-            vector<Vec3f> surfaces;
-            Vec3f surface;
+            vector<Vec3i> surfaces;
+            Vec3i surface;
             iss >> trash;
             for(int i = 0; i < 3; i++){
                 iss >> surface.vertex >> trash >> surface.uv >> trash >> surface.normal;

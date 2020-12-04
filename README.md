@@ -1,4 +1,4 @@
-# A simple rederer only use Opencv
+# A simple rederer
 A simple rederer only use Opencv
 
 Reference：

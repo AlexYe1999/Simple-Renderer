@@ -5,6 +5,7 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     :
     time_per_tick_(1.0 / cv::getTickFrequency()),
     is_clock_running_(false),
+    is_showing_rendering(false),
     start_time_(0.0),
     end_time_(0.0),
     duration_(0.0),
@@ -13,14 +14,15 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     background_color_(background_color),
     canvas_(height, width, CV_64FC4, background_color),
     model_ptr_(nullptr),
+    surface_num_(0),
     z_buffer_(nullptr),
     surfaces_(), 
     vertices_(),
     normals_(), 
     colors_(),
     textures_(),
-    zNear_(0.0f),
-    zFar_(0.0f),
+    z_near_(0.0f),
+    z_far_(0.0f),
     model_matrix_(),
     view_matrix_(),
     projection_matrix_()
@@ -103,18 +105,53 @@ bool Renderer::LoadModel(string filename){
         cerr <<"Model has been loaded\n";
         return false;
     }
-    unsigned int surface_size = model_ptr_->GetSurfeceSize();
-    surfaces_.resize(surface_size * 3);
-    vertices_.resize(surface_size * 3);
-    normals_.resize(surface_size * 3);
-    colors_.resize(surface_size * 3);
-    textures_.resize(surface_size * 3);
-
+    surface_num_ = model_ptr_->GetSurfeceSize();
+    surfaces_.resize(surface_num_);
+    vertices_.resize(surface_num_ * 3);
+    normals_.resize(surface_num_ * 3);
+    colors_.resize(surface_num_ * 3);
+    textures_.resize(surface_num_ * 3);
+    for(int i = 0; i < surface_num_* 3; i++) { 
+        colors_[i] = cv::Scalar(rand()%100*0.01f, rand()%100*0.01f, rand()%100*0.01f);
+    }
     return true;
 }
+
+bool Renderer::LoadTransformedVertex(){
+    if(model_ptr_ == nullptr){
+        cerr << "Model heven't been loaded\n";
+        return false;
+    }
+    cout<<"Transforming vertex...\n";
+
+    float f1 = (z_far_ - z_near_) * 0.5f;
+    float f2 = (z_far_ + z_near_) * 0.5f;
+    Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
+    for(int index = 0; index < surface_num_; index++){
+        vector<Vec3i> surface = model_ptr_->GetSurfece(index);
+        surfaces_[index] = surface;
+        Vec4f v4[3] ={
+            mvp_matrix * model_ptr_->GetVertex(surface[0].vertex).toVec4(1.0f),
+            mvp_matrix * model_ptr_->GetVertex(surface[1].vertex).toVec4(1.0f),
+            mvp_matrix * model_ptr_->GetVertex(surface[2].vertex).toVec4(1.0f)
+        } ;
+        Vec3f vertex[3];
+        for(int i = 0; i < 3; i++){
+            v4[i] /= v4[i].w;
+            vertex[i] = {
+                0.5f * canvas_width_ * (v4[i].x + 1.0f),
+                0.5f * canvas_height_ * (v4[i].y + 1.0f),
+                v4[i].z
+            };
+            vertices_[surface[i].vertex] = vertex[i];
+        }
+    }
+    return true;
+}
+
 void Renderer::SetModelMatrix(const float x_axis, const float y_axis, const float z_axis){
     float theta_x = x_axis * 3.1415926 / 180.0f;
-    float theta_y = z_axis * 3.1415926 / 180.0f;
+    float theta_y = y_axis * 3.1415926 / 180.0f;
     Matrix4f model_matrix_x = {
         {1.0f, 0.0f,                    0.0f,                  0.0f},
         {0.0f, cos(theta_x),  sin(theta_x), 0.0f},
@@ -123,8 +160,8 @@ void Renderer::SetModelMatrix(const float x_axis, const float y_axis, const floa
     };
     Matrix4f model_matrix_y = {
         {cos(theta_y), 0.0f,sin(theta_y), 0.0f},
-        {0.0f,                   1.0f, 0.0f,                    0.0f},
-        {-sin(theta_y),0.0f, cos(theta_y),  0.0f},
+        {0.0f,                   1.0f, 0.0f,                   0.0f},
+        {-sin(theta_y),0.0f, cos(theta_y), 0.0f},
         {0.0f,                   0.0f, 0.0f,                   1.0f},
     };
     model_matrix_ = model_matrix_x * model_matrix_y;
@@ -138,6 +175,8 @@ void Renderer::SetViewMatrix(const Vec3f& eye_pos){
     };
 }
 void Renderer::SetProjectionMatrix(const float eye_fov, const float aspect_ratio, const float zNear, const float zFar){
+    z_near_ = zNear;
+    z_far_ = zFar;
     float theta = eye_fov * 3.1415926 / 360.0f;
     float top = atan(theta) * zNear;
     float bottom =  -top;
@@ -167,80 +206,55 @@ void Renderer::SetProjectionMatrix(const float eye_fov, const float aspect_ratio
     projection_matrix_ = otho2 * otho1 * perspective;
 }
 
-bool Renderer::RenderPointModel(const  cv::Scalar& color,  const float max_size){
+bool Renderer::RenderPointModel(){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
         return false;
     }
     cout<<"rendering point ...\n";
-    Vec3f fix(max_size, max_size, max_size);
-    const int surfaces_num = model_ptr_->GetSurfeceSize();
-    for(int index = 0; index < surfaces_num; index++){
-        vector<Vec3f> indexes = model_ptr_->GetSurfece(index);
-        Vec3f vertex[3];
-        vertex[0] = (model_ptr_->GetVertex(indexes[0].vertex) + fix) * canvas_width_ * 0.5f;
-        vertex[1]  = (model_ptr_->GetVertex(indexes[1].vertex) + fix) * canvas_width_ * 0.5f;
-        vertex[2] =  (model_ptr_->GetVertex(indexes[2].vertex) + fix) * canvas_width_ * 0.5f;
-        canvas_.at<cv::Scalar>(vertex[0].y, vertex[0].x) = cv::Scalar(1.0f, 0.0f, 0.0f);         
-        canvas_.at<cv::Scalar>(vertex[1].y, vertex[1].x) = cv::Scalar(0.0f, 1.0f, 0.0f);         
-        canvas_.at<cv::Scalar>(vertex[2].y, vertex[2].x) = cv::Scalar(0.0f, 0.0f, 1.0f);         
-        cv::Mat flip;
-        cv::flip(canvas_, flip, 0);
-        cv::imshow("Processing", flip);
-        cv::waitKey(1);
+
+    for(int index = 0; index < surface_num_; index++){
+        Vec3f vertex[3]{
+            vertices_[surfaces_[index][0].vertex],
+            vertices_[surfaces_[index][1].vertex],
+            vertices_[surfaces_[index][2].vertex],
+        };
+        cv::Scalar colors[3]{
+            colors_[surfaces_[index][0].vertex],
+            colors_[surfaces_[index][1].vertex],
+            colors_[surfaces_[index][2].vertex],
+        };
+        canvas_.at<cv::Scalar>(vertex[0].y, vertex[0].x) = colors[0];         
+        canvas_.at<cv::Scalar>(vertex[1].y, vertex[1].x) = colors[1];         
+        canvas_.at<cv::Scalar>(vertex[2].y, vertex[2].x) = colors[2];
+        if(is_showing_rendering){
+            cv::imshow("Rendering", canvas_);
+            cv::waitKey(1);
+        }
     }
 
 }
 
-bool Renderer::RenderWireModel(){
+bool Renderer::RenderWireModel(cv::Scalar color){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
         return false;
     }
-    cout<<"rendering wire ...\n";
-    float f1 = (zFar_ - zNear_) * 0.5f;
-    float f2 = (zFar_ + zNear_) * 0.5f;
-    Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
-    const int surface_num = model_ptr_->GetSurfeceSize();
-    for(int index = 0; index < surface_num; index++){
-        vector<Vec3f> surface = model_ptr_->GetSurfece(index);
-        surfaces_.push_back(surface);
-        Vec4f v4[3] ={
-            mvp_matrix * model_ptr_->GetVertex(surface[0].vertex).toVec4(1.0f),
-            mvp_matrix * model_ptr_->GetVertex(surface[1].vertex).toVec4(1.0f),
-            mvp_matrix * model_ptr_->GetVertex(surface[2].vertex).toVec4(1.0f)
-        } ;
-        Vec3f vertex[3];
-        for(int i = 0; i < 3; i++){
-            v4[i] /= v4[i].w;
-            vertex[i] = {
-                0.5f * canvas_width_ * (v4[i].x + 1.0f),
-                0.5f * canvas_height_ * (v4[i].y + 1.0f),
-                v4[i].z * f1 + f2
-            };
-            vertices_[surface[i].vertex] = vertex[i];
-        }
+    cout<<"Rendering wire ...\n";
 
+    for(int index = 0; index < surface_num_; index++){
+        vector<Vec3i> surface = surfaces_[index];
+        Vec3f vertex[3]{
+            vertices_[surfaces_[index][0].vertex],
+            vertices_[surfaces_[index][1].vertex],
+            vertices_[surfaces_[index][2].vertex],
+        };
         for(int i = 0; i < 3; i++){
-            switch(i){
-                case 0:{
-                    colors_[surface[i].vertex] = cv::Scalar(1.0f, 0.0f, 0.0f);
-                    break;
-                }
-                case 1:{
-                    colors_[surface[i].vertex] = cv::Scalar(0.0f, 1.0f, 0.0f);
-                    break;
-                }
-                case 2:{
-                    colors_[surface[i].vertex] = cv::Scalar(0.0f, 0.0f, 1.0f);
-                    break;
-                }
-                default:{
-                    colors_[surface[i].vertex] = cv::Scalar(1.0f, 1.0f, 1.0f);
-                    break;
-                }
+            Draw2DLine(Vec2i(vertex[i].x, vertex[i].y), Vec2i(vertex[(i+1)%3].x, vertex[(i+1)%3].y), color);
+            if(is_showing_rendering){
+                cv::imshow("Rendering", canvas_);
+                cv::waitKey(1);
             }
-            Draw2DLine(Vec2i(vertex[i].x, vertex[i].y), Vec2i(vertex[(i+1)%3].x, vertex[(i+1)%3].y), colors_[surface[i].vertex]);
         }
     }
 
@@ -248,55 +262,30 @@ bool Renderer::RenderWireModel(){
 }
 
 bool Renderer::RenderModel(){
-    if(model_ptr_ == nullptr){
-        cerr << "Model heven't been loaded\n";
-        return false;
-    }
-    cout<<"rendering model ...\n";
 
-    float f1 = (zFar_ - zNear_) * 0.5f;
-    float f2 = (zFar_ + zNear_) * 0.5f;
-    Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
-    const int surface_num = model_ptr_->GetSurfeceSize();
-    for(int index = 0; index < surface_num; index++){
-        vector<Vec3f> surface = model_ptr_->GetSurfece(index);
-        surfaces_.push_back(surface);
-        Vec4f v4[3] ={
-            mvp_matrix * model_ptr_->GetVertex(surface[0].vertex).toVec4(1.0f),
-            mvp_matrix * model_ptr_->GetVertex(surface[1].vertex).toVec4(1.0f),
-            mvp_matrix * model_ptr_->GetVertex(surface[2].vertex).toVec4(1.0f)
-        } ;
-        Vec3f vertex[3];
-        for(int i = 0; i < 3; i++){
-            v4[i] /= v4[i].w;
-            vertex[i] = {
-                0.5f * canvas_width_ * (v4[i].x + 1.0f),
-                0.5f * canvas_height_ * (v4[i].y + 1.0f),
-                v4[i].z * f1 + f2
-            };
-            vertices_[surface[i].vertex] = vertex[i];
-            switch(i){
-                case 0:{
-                    colors_[surface[i].vertex] = cv::Scalar(1.0f, 0.0f, 0.0f);
-                    break;
-                }
-                case 1:{
-                    colors_[surface[i].vertex] = cv::Scalar(0.0f, 1.0f, 0.0f);
-                    break;
-                }
-                case 2:{
-                    colors_[surface[i].vertex] = cv::Scalar(0.0f, 0.0f, 1.0f);
-                    break;
-                }
-                default:{
-                    colors_[surface[i].vertex] = cv::Scalar(1.0f, 1.0f, 1.0f);
-                    break;
-                }
-            }
+    unsigned int z_buffer_size = canvas_width_ * canvas_height_;
+    for(int i = 0; i <  z_buffer_size; i++){
+        z_buffer_[i] = z_far_;
+    };
+    for(int index = 0; index < surface_num_; index++){
+        Vec3f vertex[3]{
+            vertices_[surfaces_[index][0].vertex],
+            vertices_[surfaces_[index][1].vertex],
+            vertices_[surfaces_[index][2].vertex],
+        };
+        cv::Scalar colors[3]{
+            colors_[surfaces_[index][0].vertex],
+            colors_[surfaces_[index][1].vertex],
+            colors_[surfaces_[index][2].vertex],
+        };
+        
+        RenderTriangles(vertex, colors);
+        if(is_showing_rendering){
+            cv::imshow("Rendering", canvas_);
+            cv::waitKey(1);
         }
-        Draw2DTriangle(vertex , cv::Scalar(rand()%100 * 0.01, rand()%100 * 0.01, rand()%100 * 0.01));
     }
-
+    return true;
 }
 
 bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
@@ -335,28 +324,36 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
     return true;
 }
 
-bool Renderer::Draw2DTriangle(const Vec3f vertex[3], const cv::Scalar& color){
-    
-    Vec2f bbox[2]; 
+bool Renderer::RenderTriangles(Vec3f* vertex, cv::Scalar* colors){
+    Vec2f bbox[2];
     FindBoundingBox(vertex, bbox);
     int max_x = static_cast<int>(bbox[1].x) + 1;
     int max_y = static_cast<int>(bbox[1].y) + 1;
     for(int y = bbox[0].y; y < max_y; y++){
         for(int x = bbox[0].x; x < max_x; x++){
-            if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))
-                && x >= 0 && y >= 0
-                && x<canvas_width_ && y<canvas_height_){
-                BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
-                canvas_.at<cv::Scalar>(y, x) = color;
+            if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
+                Vec3f vec = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
+                float pixel_z = vec.x * vertex[0].z + vec.y * vertex[1].z + vec.z * vertex[2].z;
+                if(pixel_z < z_buffer_[y*canvas_width_+ x]){
+                    z_buffer_[y*canvas_width_+x] = pixel_z;
+                    cv::Scalar color = vec.x * colors[0] + vec.y * colors[1] + vec.z * colors[2];
+                    canvas_.at<cv::Scalar>(y, x) = color;
+                }
             }
         }
     }
+
     return true;
 }
 
 Vec3f Renderer::BarycentricInterpolation(const Vec3f vec[3],  const Vec2f& pixel){
-
-
+    Vec2f v0(vec[0].x, vec[0].y);
+    Vec2f v1(vec[1].x, vec[1].y);
+    Vec2f v2(vec[2].x, vec[2].y);
+    float alpha = (pixel-v0).cross(v1-v0) / (v2 - v0).cross(v1-v0);
+    float beta = (pixel-v1).cross(v2-v1) / (v2 - v1).cross(v0-v1);
+    float gamma = (pixel-v2).cross(v0-v2) / (v0-v2).cross(v1-v2);
+    return Vec3f(abs(alpha), abs(beta), abs(gamma)); 
 }
 
 void Renderer::FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]){
@@ -379,6 +376,10 @@ void Renderer::FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]){
             bbox[1].y = vertex[i].y;
         }
     }
+    if(vertex[0].x < 0.0f){bbox[0].x = 0.0f;}
+    if(vertex[0].y < 0.0f){bbox[0].y = 0.0f;}
+    if(vertex[1].x > canvas_width_){bbox[1].x = canvas_width_;}
+    if(vertex[1].y > canvas_height_){bbox[1].y = canvas_height_;}
 
 }
 

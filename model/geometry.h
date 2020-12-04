@@ -120,9 +120,9 @@ struct Matrix4{
         };
         Vec4<T> vec2 = {
             vec[0].x * m4.vec[1].x + vec[1].x * m4.vec[1].y + vec[2].x * m4.vec[1].z + vec[3].x * m4.vec[1].w,
-            vec[0].y * m4.vec[1].x + vec[1].y * m4.vec[1].y + vec[2].y * m4.vec[1].z+ vec[3].y * m4.vec[1].w,
+            vec[0].y * m4.vec[1].x + vec[1].y * m4.vec[1].y + vec[2].y * m4.vec[1].z + vec[3].y * m4.vec[1].w,
             vec[0].z * m4.vec[1].x + vec[1].z * m4.vec[1].y + vec[2].z * m4.vec[1].z + vec[3].z * m4.vec[1].w,
-            vec[0].w* m4.vec[1].x + vec[1].w* m4.vec[1].y+ vec[2].w* m4.vec[1].z + vec[3].w *m4.vec[1].w
+            vec[0].w* m4.vec[1].x + vec[1].w* m4.vec[1].y+ vec[2].w* m4.vec[1].z + vec[3].w* m4.vec[1].w
         };
         Vec4<T> vec3 = {
             vec[0].x * m4.vec[2].x + vec[1].x * m4.vec[2].y + vec[2].x * m4.vec[2].z + vec[3].x * m4.vec[2].w,

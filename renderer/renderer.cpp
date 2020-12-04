@@ -17,8 +17,10 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     surfaces_(), 
     vertices_(),
     normals_(), 
-    textures_(),
     colors_(),
+    textures_(),
+    zNear_(0.0f),
+    zFar_(0.0f),
     model_matrix_(),
     view_matrix_(),
     projection_matrix_()
@@ -69,10 +71,8 @@ void Renderer::GetTimeCost(){
 
 void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms){
     StopClock();
-    cv::Mat image;
-    flip(canvas_, image, 0);
     cv::namedWindow(window_name);
-    imshow(window_name, image);
+    imshow(window_name, canvas_);
     cv::waitKey(delay_ms);
     StartClock();
 }
@@ -116,40 +116,38 @@ void Renderer::SetModelMatrix(const float x_axis, const float y_axis, const floa
     float theta_x = x_axis * 3.1415926 / 180.0f;
     float theta_y = z_axis * 3.1415926 / 180.0f;
     Matrix4f model_matrix_x = {
-        {1, 0,                        0,                       0},
-        {0, cos(theta_x), -sin(theta_x), 0},
-        {0, sin(theta_x), cos(theta_x), 0},
-        {0, 0, 0, 1},
+        {1.0f, 0.0f,                    0.0f,                  0.0f},
+        {0.0f, cos(theta_x),  sin(theta_x), 0.0f},
+        {0.0f, -sin(theta_x), cos(theta_x), 0.0f},
+        {0.0f, 0.0f,                    0.0f,                   1.0f}
     };
     Matrix4f model_matrix_y = {
-        {1, 0, 0, 0},
-        {0, 1, 0, 0},
-        {0, 0, 1, 0},
-        {0, 0, 0, 1},
+        {cos(theta_y), 0.0f,sin(theta_y), 0.0f},
+        {0.0f,                   1.0f, 0.0f,                    0.0f},
+        {-sin(theta_y),0.0f, cos(theta_y),  0.0f},
+        {0.0f,                   0.0f, 0.0f,                   1.0f},
     };
     model_matrix_ = model_matrix_x * model_matrix_y;
 }
 void Renderer::SetViewMatrix(const Vec3f& eye_pos){
     view_matrix_ = Matrix4f{
-        {1, 0, 0, -eye_pos.x},
-        {0, 1, 0, -eye_pos.y},
-        {0, 0, 1, -eye_pos.z},
-        {0, 0, 0, 1}
+        {1.0f,                  0.0f,               0.0f,               0.0f},
+        {0.0f,                  1.0f,               0.0f,               0.0f},
+        {0.0f,                  0.0f,               1.0f,               0.0f},
+        {-eye_pos.x, -eye_pos.y, -eye_pos.z, 1.0f}
     };
-
 }
 void Renderer::SetProjectionMatrix(const float eye_fov, const float aspect_ratio, const float zNear, const float zFar){
     float theta = eye_fov * 3.1415926 / 360.0f;
-    float top = atan(theta) * zFar;
+    float top = atan(theta) * zNear;
     float bottom =  -top;
     float right = top * aspect_ratio;
     float left = -right;
-
     Matrix4f otho1 = {
-        {1, 0, 0, -(left + right) * 0.5f      },
-        {0, 1, 0, -(top + bottom) * 0.5f},
-        {0, 0, 1, -(zNear+ zFar) * 0.5f   },
-        {0, 0 ,0 ,1                                         }
+        {1.0f,                               0.0f,                                      0.0f,                                  0.0f},
+        {0.0f,                               1.0f,                                      0.0f,                                  0.0f},
+        {0.0f,                               0.0f,                                      1.0f,                                  0.0f},
+        {(left + right) * -0.5f, (top + bottom) * -0.5f ,(zNear + zFar) * -0.5f ,1.0f}
     };
 
     Matrix4f otho2 = {
@@ -160,14 +158,13 @@ void Renderer::SetProjectionMatrix(const float eye_fov, const float aspect_ratio
     };
 
     Matrix4f perspective = {
-        {zNear, 0,          0,                      0                       },
-        {0,          zNear, 0,                      0                       },
-        {0,          0,          zNear+zFar,  -zNear*zFar },
-        {0,          0,          1,                       0                      }
+        {zNear, 0.0f,     0.0f,                        0},
+        {0.0f,     zNear, 0.0f,                        0},
+        {0.0f,     0.0f,      zNear+zFar,  1.0f},
+        {0.0f,     0.0f,      -zNear*zFar, 0.0f}
     };
 
     projection_matrix_ = otho2 * otho1 * perspective;
-
 }
 
 bool Renderer::RenderPointModel(const  cv::Scalar& color,  const float max_size){
@@ -201,7 +198,8 @@ bool Renderer::RenderWireModel(){
         return false;
     }
     cout<<"rendering wire ...\n";
-
+    float f1 = (zFar_ - zNear_) * 0.5f;
+    float f2 = (zFar_ + zNear_) * 0.5f;
     Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
     const int surface_num = model_ptr_->GetSurfeceSize();
     for(int index = 0; index < surface_num; index++){
@@ -212,8 +210,6 @@ bool Renderer::RenderWireModel(){
             mvp_matrix * model_ptr_->GetVertex(surface[1].vertex).toVec4(1.0f),
             mvp_matrix * model_ptr_->GetVertex(surface[2].vertex).toVec4(1.0f)
         } ;
-        float f1 = (2.0f - 0.5f) / 2.0f;
-        float f2 = (2.0 - 0.5f) / 2.0f;
         Vec3f vertex[3];
         for(int i = 0; i < 3; i++){
             v4[i] /= v4[i].w;
@@ -223,7 +219,6 @@ bool Renderer::RenderWireModel(){
                 v4[i].z * f1 + f2
             };
             vertices_[surface[i].vertex] = vertex[i];
-            
         }
 
         for(int i = 0; i < 3; i++){
@@ -259,6 +254,8 @@ bool Renderer::RenderModel(){
     }
     cout<<"rendering model ...\n";
 
+    float f1 = (zFar_ - zNear_) * 0.5f;
+    float f2 = (zFar_ + zNear_) * 0.5f;
     Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
     const int surface_num = model_ptr_->GetSurfeceSize();
     for(int index = 0; index < surface_num; index++){
@@ -269,8 +266,6 @@ bool Renderer::RenderModel(){
             mvp_matrix * model_ptr_->GetVertex(surface[1].vertex).toVec4(1.0f),
             mvp_matrix * model_ptr_->GetVertex(surface[2].vertex).toVec4(1.0f)
         } ;
-        float f1 = (2.0f - 0.5f) / 2.0f;
-        float f2 = (2.0 - 0.5f) / 2.0f;
         Vec3f vertex[3];
         for(int i = 0; i < 3; i++){
             v4[i] /= v4[i].w;
@@ -299,7 +294,7 @@ bool Renderer::RenderModel(){
                 }
             }
         }
-        Draw2DRectangle(vertex , cv::Scalar(rand()%100 * 0.01, rand()%100 * 0.01, rand()%100 * 0.01));
+        Draw2DTriangle(vertex , cv::Scalar(rand()%100 * 0.01, rand()%100 * 0.01, rand()%100 * 0.01));
     }
 
 }
@@ -340,7 +335,7 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
     return true;
 }
 
-bool Renderer::Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color){
+bool Renderer::Draw2DTriangle(const Vec3f vertex[3], const cv::Scalar& color){
     
     Vec2f bbox[2]; 
     FindBoundingBox(vertex, bbox);
@@ -348,7 +343,10 @@ bool Renderer::Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color){
     int max_y = static_cast<int>(bbox[1].y) + 1;
     for(int y = bbox[0].y; y < max_y; y++){
         for(int x = bbox[0].x; x < max_x; x++){
-            if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
+            if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))
+                && x >= 0 && y >= 0
+                && x<canvas_width_ && y<canvas_height_){
+                BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
                 canvas_.at<cv::Scalar>(y, x) = color;
             }
         }
@@ -356,7 +354,7 @@ bool Renderer::Draw2DRectangle(const Vec3f vertex[3], const cv::Scalar& color){
     return true;
 }
 
-Vec3f Renderer::BarycentricInterpolation(const Vec3f vec[3]){
+Vec3f Renderer::BarycentricInterpolation(const Vec3f vec[3],  const Vec2f& pixel){
 
 
 }

@@ -12,14 +12,13 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     canvas_width_(width),
     canvas_height_(height),
     background_color_(background_color),
-    canvas_(height, width, CV_64FC4, background_color),
+    canvas_(height, width, CV_8U, background_color),
     model_ptr_(nullptr),
     surface_num_(0),
     z_buffer_(nullptr),
     surfaces_(), 
     vertices_(),
     normals_(), 
-    colors_(),
     textures_(),
     z_near_(0.0f),
     z_far_(0.0f),
@@ -97,23 +96,17 @@ void Renderer::SaveImage(std::string filename){
     }
 }
 
-bool Renderer::LoadModel(string filename){
+bool Renderer::LoadModel(string filename, string texture_name){
     if(model_ptr_ == nullptr){
-        model_ptr_ = new Model(filename);
+        model_ptr_ = new Model(filename, texture_name);
     }
     else{
         cerr <<"Model has been loaded\n";
         return false;
     }
     surface_num_ = model_ptr_->GetSurfeceSize();
-    surfaces_.resize(surface_num_);
     vertices_.resize(surface_num_ * 3);
     normals_.resize(surface_num_ * 3);
-    colors_.resize(surface_num_ * 3);
-    textures_.resize(surface_num_ * 3);
-    for(int i = 0; i < surface_num_* 3; i++) { 
-        colors_[i] = cv::Scalar(rand()%100*0.01f, rand()%100*0.01f, rand()%100*0.01f);
-    }
     return true;
 }
 
@@ -127,14 +120,17 @@ bool Renderer::LoadTransformedVertex(){
     float f1 = (z_far_ - z_near_) * 0.5f;
     float f2 = (z_far_ + z_near_) * 0.5f;
     Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
+    for(int index = 0; index < surface_num_ * 3; index++){
+        textures_.push_back(model_ptr_->GetTexture(index));
+    }
     for(int index = 0; index < surface_num_; index++){
         vector<Vec3i> surface = model_ptr_->GetSurfece(index);
-        surfaces_[index] = surface;
+        surfaces_.push_back(surface);
         Vec4f v4[3] ={
             mvp_matrix * model_ptr_->GetVertex(surface[0].vertex).toVec4(1.0f),
             mvp_matrix * model_ptr_->GetVertex(surface[1].vertex).toVec4(1.0f),
             mvp_matrix * model_ptr_->GetVertex(surface[2].vertex).toVec4(1.0f)
-        } ;
+        };
         Vec3f vertex[3];
         for(int i = 0; i < 3; i++){
             v4[i] /= v4[i].w;
@@ -214,19 +210,16 @@ bool Renderer::RenderPointModel(){
     cout<<"rendering point ...\n";
 
     for(int index = 0; index < surface_num_; index++){
+        vector<Vec3i> indexes = surfaces_[index];
         Vec3f vertex[3]{
-            vertices_[surfaces_[index][0].vertex],
-            vertices_[surfaces_[index][1].vertex],
-            vertices_[surfaces_[index][2].vertex],
+            vertices_[indexes[0].vertex],
+            vertices_[indexes[1].vertex],
+            vertices_[indexes[2].vertex],
         };
-        cv::Scalar colors[3]{
-            colors_[surfaces_[index][0].vertex],
-            colors_[surfaces_[index][1].vertex],
-            colors_[surfaces_[index][2].vertex],
-        };
-        canvas_.at<cv::Scalar>(vertex[0].y, vertex[0].x) = colors[0];         
-        canvas_.at<cv::Scalar>(vertex[1].y, vertex[1].x) = colors[1];         
-        canvas_.at<cv::Scalar>(vertex[2].y, vertex[2].x) = colors[2];
+
+        canvas_.at<cv::Scalar>(vertex[0].y, vertex[0].x) = cv::Scalar(0.0, 0.0, 1.0);
+        canvas_.at<cv::Scalar>(vertex[1].y, vertex[1].x) = cv::Scalar(0.0, 1.0, 0.0);
+        canvas_.at<cv::Scalar>(vertex[2].y, vertex[2].x) = cv::Scalar(1.0, 0.0, 0.0);
         if(is_showing_rendering){
             cv::imshow("Rendering", canvas_);
             cv::waitKey(1);
@@ -243,7 +236,7 @@ bool Renderer::RenderWireModel(cv::Scalar color){
     cout<<"Rendering wire ...\n";
 
     for(int index = 0; index < surface_num_; index++){
-        vector<Vec3i> surface = surfaces_[index];
+        vector<Vec3i>& surface = surfaces_[index];
         Vec3f vertex[3]{
             vertices_[surfaces_[index][0].vertex],
             vertices_[surfaces_[index][1].vertex],
@@ -268,17 +261,17 @@ bool Renderer::RenderModel(){
         z_buffer_[i] = z_far_;
     };
     for(int index = 0; index < surface_num_; index++){
+        vector<Vec3i>& indexes = surfaces_[index];
         Vec3f vertex[3]{
-            vertices_[surfaces_[index][0].vertex],
-            vertices_[surfaces_[index][1].vertex],
-            vertices_[surfaces_[index][2].vertex],
+            vertices_[indexes[0].vertex],
+            vertices_[indexes[1].vertex],
+            vertices_[indexes[2].vertex],
         };
-        cv::Scalar colors[3]{
-            colors_[surfaces_[index][0].vertex],
-            colors_[surfaces_[index][1].vertex],
-            colors_[surfaces_[index][2].vertex],
+        Vec3f colors[3]{
+            model_ptr_->getColor(textures_[indexes[0].uv].u, textures_[indexes[0].uv].v),         
+            model_ptr_->getColor(textures_[indexes[1].uv].u, textures_[indexes[1].uv].v),    
+            model_ptr_->getColor(textures_[indexes[2].uv].u, textures_[indexes[2].uv].v)
         };
-        
         RenderTriangles(vertex, colors);
         if(is_showing_rendering){
             cv::imshow("Rendering", canvas_);
@@ -324,7 +317,7 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
     return true;
 }
 
-bool Renderer::RenderTriangles(Vec3f* vertex, cv::Scalar* colors){
+bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* colors){
     Vec2f bbox[2];
     FindBoundingBox(vertex, bbox);
     int max_x = static_cast<int>(bbox[1].x) + 1;
@@ -332,12 +325,12 @@ bool Renderer::RenderTriangles(Vec3f* vertex, cv::Scalar* colors){
     for(int y = bbox[0].y; y < max_y; y++){
         for(int x = bbox[0].x; x < max_x; x++){
             if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
-                Vec3f vec = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
-                float pixel_z = vec.x * vertex[0].z + vec.y * vertex[1].z + vec.z * vertex[2].z;
-                if(pixel_z < z_buffer_[y*canvas_width_+ x]){
+                Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
+                float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
+                if(pixel_z <= z_buffer_[y * canvas_width_+ x]){
                     z_buffer_[y*canvas_width_+x] = pixel_z;
-                    cv::Scalar color = vec.x * colors[0] + vec.y * colors[1] + vec.z * colors[2];
-                    canvas_.at<cv::Scalar>(y, x) = color;
+                    Vec3f color(colors[0] * barycentric.x + colors[1] * barycentric.y + colors[2] * barycentric.z);
+                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z / 255.0f, color.y / 255.0f, color.x / 255.0f);
                 }
             }
         }
@@ -350,9 +343,9 @@ Vec3f Renderer::BarycentricInterpolation(const Vec3f vec[3],  const Vec2f& pixel
     Vec2f v0(vec[0].x, vec[0].y);
     Vec2f v1(vec[1].x, vec[1].y);
     Vec2f v2(vec[2].x, vec[2].y);
-    float alpha = (pixel-v0).cross(v1-v0) / (v2 - v0).cross(v1-v0);
-    float beta = (pixel-v1).cross(v2-v1) / (v2 - v1).cross(v0-v1);
-    float gamma = (pixel-v2).cross(v0-v2) / (v0-v2).cross(v1-v2);
+    float alpha = (pixel-v1).cross(v2-v1) / (v2 - v1).cross(v0-v1);
+    float beta = (pixel-v2).cross(v0-v2) / (v0-v2).cross(v1-v2);
+    float gamma = (pixel-v0).cross(v1-v0) / (v2 - v0).cross(v1-v0);
     return Vec3f(abs(alpha), abs(beta), abs(gamma)); 
 }
 

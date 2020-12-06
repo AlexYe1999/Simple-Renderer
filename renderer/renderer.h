@@ -1,8 +1,9 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
+#include"../model/model.h"
+#include"../shader/shader.h"
 #include<string>
 #include<opencv2/opencv.hpp>
-#include"../model/model.h"
 
 namespace YeahooQAQ{
 using namespace std;
@@ -27,7 +28,7 @@ public:
     }
 
 public:
-    bool LoadModel(string filename);
+    bool LoadModel(string filename, string texture_name);
     bool LoadTransformedVertex();
 
 public:
@@ -44,7 +45,7 @@ public:
 
 public:
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
-    bool RenderTriangles(Vec3f* vertex, cv::Scalar* color);
+    bool RenderTriangles(Vec3f* vertex, Vec3f* color);
 
 private:
     void FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]);
@@ -69,14 +70,13 @@ private:
     Model* model_ptr_;
 
 private:
+
     unsigned int surface_num_;
     float* z_buffer_;
     vector<vector<Vec3i>> surfaces_;
     vector<Vec3f> vertices_;
     vector<Vec3f> normals_;
-    vector<cv::Scalar> colors_;
     vector<Vec2f> textures_;
-
 
 private:
     float z_near_;

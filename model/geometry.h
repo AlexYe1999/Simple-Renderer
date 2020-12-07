@@ -35,9 +35,11 @@ struct Vec3{
     inline Vec3<T> operator +(const Vec3<T>& vec) const { return Vec3<T>(x + vec.x, y + vec.y, z + vec.z);}
     inline Vec3<T> operator -(const Vec3<T>& vec) const {return Vec3<T>(x - vec.x, y - vec.y, z - vec.z);}
     inline Vec3<T> operator *(const T n) const {return Vec3<T>(n * x, n * y, n * z);};
-    inline  Vec3<T> cross(const Vec3<T>& vec) const {return Vec3<T>(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);}
-    inline T operator *(const Vec3<T>& vec) const {return T(x * vec.x + y * vec.y + z * vec.z);}
+    inline T operator *(const Vec3<T>& vec) const {return T(x * vec.x + y * vec.y + z * vec.z);}    
+    inline Vec3<T> operator /=(const T& n) const {x /= n; y /= n; z /= n; return *this;}
     inline T& operator [](const int index) {if(index == 0) {return x;}else if(index == 1){ return y;}else if(index == 2){ return z;}}
+    inline  Vec3<T> cross(const Vec3<T>& vec) const {return Vec3<T>(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);}
+    inline Vec3<T> normalized(){return Vec3<T>((*this) /= sqrt(x*x + y*y + z*z));}
     inline Vec4<T> toVec4(const T w) const { return Vec4<T>(x, y, z, w);}
     inline Vec4<T> toVec4() const{ return Vec4<T>(x, y, z, T(0));}
     template<typename> friend ostream& operator <<(ostream& os, const Vec3<T>& vec3);

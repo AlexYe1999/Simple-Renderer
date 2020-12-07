@@ -17,28 +17,28 @@ int main(int argc, char* argv[]){
     renderer.ShowProcessing(false);
     while((key = cv::waitKey(50)) != 'q'){
         if(key == 'w'){
-            eye_pos.z+=0.1f;
+            eye_pos.z += 0.1f;
         }
         else if(key == 's'){
-            eye_pos.z-=0.1f;
+            eye_pos.z -= 0.1f;
         }
         else if(key == 'a'){
-            eye_pos.x-=0.1f;
+            eye_pos.x -= 0.1f;
         }
         else if(key == 'd'){
-            eye_pos.x+=0.1f;
+            eye_pos.x += 0.1;
         }
-
+        renderer.ShowProcessing(false);
         renderer.ClearCanvas();
         renderer.SetModelMatrix(0.0f, count * theta_per_second, 0.0f);
         renderer.SetViewMatrix(eye_pos);
-        renderer.SetProjectionMatrix(45.0f, 1.0f, 0.1, 20.0f);   
+        renderer.SetProjectionMatrix(30.0f, 1.0f, 0.1, 50.0f);   
 
         renderer.StartClock();
         renderer.LoadTransformedVertex();
 
+        renderer.RenderPointModel();
         renderer.RenderModel();
-
         renderer.GetTimeCost();
         
         renderer.ShowImage("Rendering", 100);

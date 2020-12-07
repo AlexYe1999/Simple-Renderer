@@ -45,7 +45,7 @@ public:
 
 public:
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
-    bool RenderTriangles(Vec3f* vertex, Vec3f* color);
+    bool RenderTriangles(Vec3f* vertex, Vec2f* uv);
 
 private:
     void FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]);

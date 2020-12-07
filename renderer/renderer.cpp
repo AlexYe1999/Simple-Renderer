@@ -72,13 +72,16 @@ void Renderer::GetTimeCost(){
 
 void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms){
     StopClock();
+    cv::Mat t = canvas_.clone();
+    cv::flip(t, t, 0);
     cv::namedWindow(window_name);
-    imshow(window_name, canvas_);
+    imshow(window_name, t);
     cv::waitKey(delay_ms);
     StartClock();
 }
 
 void Renderer::SaveImage(std::string filename){
+    cv::flip(canvas_, canvas_, 0);
     cv::namedWindow("OutputImage");
     cv::imshow("OutputImage", canvas_);
     cout<<"\nPush s to save image\n";
@@ -165,7 +168,7 @@ void Renderer::SetViewMatrix(const Vec3f& eye_pos){
         {1.0f,                  0.0f,               0.0f,               0.0f},
         {0.0f,                  1.0f,               0.0f,               0.0f},
         {0.0f,                  0.0f,               1.0f,               0.0f},
-        {-eye_pos.x, -eye_pos.y, -eye_pos.z, 1.0f}
+        {eye_pos.x, eye_pos.y, eye_pos.z, 1.0f}
     };
 }
 void Renderer::SetProjectionMatrix(const float eye_fov, const float aspect_ratio, const float zNear, const float zFar){

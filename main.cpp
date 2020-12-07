@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
     int count = 0;
     char key = '0';
     renderer.ShowProcessing(false);
-    while((key = cv::waitKey(50)) != 'q'){
+    while((key = cv::waitKey(100)) != 'q'){
         if(key == 'w'){
             eye_pos.z += 0.1f;
         }
@@ -30,7 +30,7 @@ int main(int argc, char* argv[]){
         }
         renderer.ShowProcessing(false);
         renderer.ClearCanvas();
-        renderer.SetModelMatrix(0.0f, count * theta_per_second, 0.0f);
+        renderer.SetModelMatrix(45.0f, count * theta_per_second, 0.0f);
         renderer.SetViewMatrix(eye_pos);
         renderer.SetProjectionMatrix(30.0f, 1.0f, 0.1, 50.0f);   
 

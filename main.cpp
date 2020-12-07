@@ -10,7 +10,7 @@ int main(int argc, char* argv[]){
     Renderer renderer(1000, 1000, background_color);
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
 
-    Vec3f eye_pos(0.0f, 0.0f, 5.0f);
+    Vec3f eye_pos(0.0f, 0.0f, -15.0f);
     float theta_per_second = 5.0f;
     int count = 0;
     char key = '0';
@@ -37,8 +37,8 @@ int main(int argc, char* argv[]){
         renderer.StartClock();
         renderer.LoadTransformedVertex();
 
-        renderer.RenderPointModel();
         renderer.RenderModel();
+        
         renderer.GetTimeCost();
         
         renderer.ShowImage("Rendering", 100);

@@ -72,10 +72,10 @@ void Renderer::GetTimeCost(){
 
 void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms){
     StopClock();
-    cv::Mat t = canvas_.clone();
-    cv::flip(t, t, 0);
+    cv::Mat image;
+    cv::flip(canvas_, image, 0);
     cv::namedWindow(window_name);
-    imshow(window_name, t);
+    imshow(window_name, image);
     cv::waitKey(delay_ms);
     StartClock();
 }
@@ -138,7 +138,7 @@ bool Renderer::LoadTransformedVertex(){
             vertex[i] = {
                 0.5f * canvas_width_ * (v4[i].x + 1.0f),
                 0.5f * canvas_height_ * (v4[i].y + 1.0f),
-                v4[i].z
+                v4[i].z * f1 + f2
             };
             vertices_[surfaces_[index][i].vertex] = vertex[i];
         }
@@ -147,16 +147,16 @@ bool Renderer::LoadTransformedVertex(){
 }
 
 void Renderer::SetModelMatrix(const float x_axis, const float y_axis, const float z_axis){
-    float theta_x = x_axis * 3.1415926 / 180.0f;
-    float theta_y = y_axis * 3.1415926 / 180.0f;
+    float theta_x = x_axis * 3.1415926535898f / 180.0f;
+    float theta_y = y_axis * 3.1415926535898f / 180.0f;
     Matrix4f model_matrix_x = {
         {1.0f, 0.0f,                    0.0f,                  0.0f},
-        {0.0f, cos(theta_x),  sin(theta_x), 0.0f},
-        {0.0f, -sin(theta_x), cos(theta_x), 0.0f},
+        {0.0f, cos(theta_x),  -sin(theta_x), 0.0f},
+        {0.0f, sin(theta_x), cos(theta_x), 0.0f},
         {0.0f, 0.0f,                    0.0f,                   1.0f}
     };
     Matrix4f model_matrix_y = {
-        {cos(theta_y), 0.0f,sin(theta_y), 0.0f},
+        {cos(theta_y), 0.0f, sin(theta_y), 0.0f},
         {0.0f,                   1.0f, 0.0f,                   0.0f},
         {-sin(theta_y),0.0f, cos(theta_y), 0.0f},
         {0.0f,                   0.0f, 0.0f,                   1.0f},
@@ -168,13 +168,13 @@ void Renderer::SetViewMatrix(const Vec3f& eye_pos){
         {1.0f,                  0.0f,               0.0f,               0.0f},
         {0.0f,                  1.0f,               0.0f,               0.0f},
         {0.0f,                  0.0f,               1.0f,               0.0f},
-        {eye_pos.x, eye_pos.y, eye_pos.z, 1.0f}
+        {-eye_pos.x, -eye_pos.y, -eye_pos.z, 1.0f}
     };
 }
 void Renderer::SetProjectionMatrix(const float eye_fov, const float aspect_ratio, const float zNear, const float zFar){
     z_near_ = zNear;
     z_far_ = zFar;
-    float theta = eye_fov * 3.1415926 / 360.0f;
+    float theta = eye_fov * 3.1415926535898f / 360.0f;
     float top = atan(theta) * zNear;
     float bottom =  -top;
     float right = top * aspect_ratio;

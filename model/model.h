@@ -15,12 +15,14 @@ public:
     Model(const string& file_name, const string& texture_name);
     ~Model();
 public: 
-    const int GetVertexSize() const{return static_cast<int>(vertices_.size());};
-    const int GetSurfeceSize() const{return static_cast<int>(surfaces_.size());};
+    const int GetSurfeceSize() const{return static_cast<unsigned int>(surfaces_.size());}
+    const int GetVertexSize() const{return static_cast<unsigned int>(vertices_.size());}
+    const int GetNormalSize() const{return static_cast<unsigned int>(normals_.size());}
+    const int GetTextureSize() const{return static_cast<unsigned int>(textures_.size());}
+    const vector<Vec3i>& GetSurfece(const int index) const{return surfaces_[index];}
     const Vec3f& GetVertex(const int index) const{return vertices_[index];}    
     const Vec3f& GetNormal(const int index) const{return normals_[index];}    
-    const Vec2f& GetTexture(const int index) const{return textures_[index];}    
-    const vector<Vec3i>& GetSurfece(const int index) const{return surfaces_[index];};
+    const Vec2f& GetTexture(const int index) const{return textures_[index];}
     const Vec3f getColor(float u, float v);
 private:
     vector<vector<Vec3i>> surfaces_;

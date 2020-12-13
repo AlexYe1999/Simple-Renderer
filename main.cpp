@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
     int count = 0;
     char key = '0';
     renderer.ShowProcessing(false);
-    while(false && (key = cv::waitKey(5)) != 'q'){
+    while((key = cv::waitKey(5)) != 'q'){
         if(key == 'w'){
             eye_pos.z += 0.1f;
         }

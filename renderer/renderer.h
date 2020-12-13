@@ -67,13 +67,14 @@ private:
     const unsigned int canvas_height_;
     cv::Scalar background_color_;
     cv::Mat canvas_;
-private:
-    Model* model_ptr_;
 
 private:
-
-    unsigned int surface_num_;
     float* z_buffer_;
+    unsigned int surface_size_;
+    unsigned int vertex_size_;
+    unsigned int normal_size_;
+    unsigned int texture_size_;
+    Model* model_ptr_;
     vector<vector<Vec3i>> surfaces_;
     vector<Vec3f> vertices_;
     vector<Vec3f> normals_;

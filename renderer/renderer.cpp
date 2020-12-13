@@ -15,8 +15,11 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     background_color_(background_color),
     canvas_(height, width, CV_64FC4, background_color),
     model_ptr_(nullptr),
-    surface_num_(0),
     z_buffer_(nullptr),
+    surface_size_(0),
+    vertex_size_(0),
+    normal_size_(0),
+    texture_size_(0),
     surfaces_(), 
     vertices_(),
     normals_(), 
@@ -108,9 +111,17 @@ bool Renderer::LoadModel(const string& filename, const string& texture_name){
         cerr <<"Model has been loaded\n";
         return false;
     }
-    surface_num_ = model_ptr_->GetSurfeceSize();
-    vertices_.resize(surface_num_ * 3);
-    normals_.resize(surface_num_ * 3);
+    surface_size_ = model_ptr_->GetSurfeceSize();
+    vertex_size_ = model_ptr_->GetVertexSize();
+    normal_size_ = model_ptr_->GetNormalSize();
+    texture_size_ = model_ptr_->GetTextureSize();
+
+    for(unsigned int index = 0; index < surface_size_; index++){
+        surfaces_.push_back(model_ptr_->GetSurfece(index));
+    }
+    for(unsigned int index = 0; index < texture_size_; index++){
+        textures_.push_back(model_ptr_->GetTexture(index));
+    }
     return true;
 }
 
@@ -119,31 +130,25 @@ bool Renderer::LoadTransformedVertex(){
         cerr << "Model heven't been loaded\n";
         return false;
     }
-
+    vertices_.clear();
+    normals_.clear();
     float f1 = (z_far_ - z_near_) * 0.5f;
     float f2 = (z_far_ + z_near_) * 0.5f;
     Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
-    for(int index = 0; index < surface_num_ * 3; index++){
-        textures_.push_back(model_ptr_->GetTexture(index));
-    }
-    for(int index = 0; index < surface_num_; index++){
-        surfaces_.push_back(model_ptr_->GetSurfece(index));
-        Vec4f v4[3] ={
-            mvp_matrix * model_ptr_->GetVertex(surfaces_[index][0].vertex).toVec4(1.0f),
-            mvp_matrix * model_ptr_->GetVertex(surfaces_[index][1].vertex).toVec4(1.0f),
-            mvp_matrix * model_ptr_->GetVertex(surfaces_[index][2].vertex).toVec4(1.0f)
+    for(unsigned int index = 0; index < vertex_size_; index++){
+        Vec4f v4 = mvp_matrix * model_ptr_->GetVertex(index).toVec4(1.0f);
+        v4 /= v4.w;
+        Vec3f v3 = {
+            0.5f * canvas_width_ * (v4.x + 1.0f),
+            0.5f * canvas_height_ * (v4.y + 1.0f),
+            v4.z * f1 + f2
         };
-        Vec3f vertex[3];
-        for(int i = 0; i < 3; i++){
-            v4[i] /= v4[i].w;
-            vertex[i] = {
-                0.5f * canvas_width_ * (v4[i].x + 1.0f),
-                0.5f * canvas_height_ * (v4[i].y + 1.0f),
-                v4[i].z * f1 + f2
-            };
-            vertices_[surfaces_[index][i].vertex] = vertex[i];
-        }
+        vertices_.push_back(v3);
     }
+    for(unsigned int index = 0; index < normal_size_; index++){
+        normals_.push_back(model_ptr_->GetNormal(index));
+    }
+
     return true;
 }
 
@@ -211,12 +216,12 @@ bool Renderer::RenderPointModel(){
     }
     cout<<"rendering point ...\n";
 
-    for(int index = 0; index < surface_num_; index++){
+    for(int index = 0; index < surface_size_; index++){
         vector<Vec3i> indexes = surfaces_[index];
         Vec3f vertex[3]{
             vertices_[indexes[0].vertex],
             vertices_[indexes[1].vertex],
-            vertices_[indexes[2].vertex],
+            vertices_[indexes[2].vertex]
         };
         Vec3f v0 = model_ptr_->getColor(textures_[indexes[0].uv].u, textures_[indexes[0].uv].v);  
         Vec3f v1 = model_ptr_->getColor(textures_[indexes[1].uv].u, textures_[indexes[1].uv].v);
@@ -239,12 +244,12 @@ bool Renderer::RenderWireModel(cv::Scalar color){
     }
     cout<<"Rendering wire ...\n";
 
-    for(int index = 0; index < surface_num_; index++){
+    for(int index = 0; index < surface_size_; index++){
         vector<Vec3i>& surface = surfaces_[index];
         Vec3f vertex[3]{
             vertices_[surfaces_[index][0].vertex],
             vertices_[surfaces_[index][1].vertex],
-            vertices_[surfaces_[index][2].vertex],
+            vertices_[surfaces_[index][2].vertex]
         };
         for(int i = 0; i < 3; i++){
             Draw2DLine(Vec2i(vertex[i].x, vertex[i].y), Vec2i(vertex[(i+1)%3].x, vertex[(i+1)%3].y), color);
@@ -264,7 +269,7 @@ bool Renderer::RenderModel(){
     for(int i = 0; i <  z_buffer_size; i++){
         z_buffer_[i] = z_far_;
     };
-    for(int index = 0; index < surface_num_; index++){
+    for(int index = 0; index < surface_size_; index++){
         vector<Vec3i>& indexes = surfaces_[index];
         Vec3f vertex[3]{
             vertices_[indexes[0].vertex],

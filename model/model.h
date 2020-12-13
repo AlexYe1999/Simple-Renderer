@@ -12,7 +12,7 @@ using namespace std;
 
 class Model{
 public:
-    Model(string& file_name, string texture_name);
+    Model(const string& file_name, const string& texture_name);
     ~Model();
 public: 
     const int GetVertexSize() const{return static_cast<int>(vertices_.size());};

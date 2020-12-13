@@ -22,13 +22,14 @@ public:
 public:
     void ShowImage(string window_name, const unsigned short delay_ms);
     void SaveImage(string filename);
-    void ShowProcessing(bool is_open){is_showing_rendering = is_open;};
+    void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
+    void MSAA(bool is_open){is_MSAA_open_ = is_open;}
     void ClearCanvas(){
         canvas_ = cv::Mat(canvas_height_, canvas_width_, CV_64FC4, background_color_);
     }
 
 public:
-    bool LoadModel(string filename, string texture_name);
+    bool LoadModel(const string& filename, const string& texture_name);
     bool LoadTransformedVertex();
 
 public:
@@ -56,6 +57,7 @@ private:
     const  double time_per_tick_;
     bool is_clock_running_;
     bool is_showing_rendering;
+    bool is_MSAA_open_;
     int64 start_time_;
     int64 end_time_;
     int64 duration_;
@@ -65,7 +67,6 @@ private:
     const unsigned int canvas_height_;
     cv::Scalar background_color_;
     cv::Mat canvas_;
-
 private:
     Model* model_ptr_;
 

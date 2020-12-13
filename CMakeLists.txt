@@ -4,6 +4,14 @@ project(main)
 
 add_subdirectory(renderer)
 add_subdirectory(model)
-add_executable(Rendering main.cpp)
+add_subdirectory(shader)
+add_subdirectory(texture)
 
-target_link_libraries(Rendering Renderer Model)
+set(STATIC_LIB 
+    Renderer
+    Model
+    Shader
+)
+
+add_executable(Rendering main.cpp)
+target_link_libraries(Rendering ${STATIC_LIB})

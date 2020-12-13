@@ -3,7 +3,7 @@
 namespace YeahooQAQ{
 using namespace std;
 
-Model::Model(string& filename, string texture_name)
+Model::Model(const string& filename, const string& texture_name)
     :
     surfaces_(), 
     vertices_(),

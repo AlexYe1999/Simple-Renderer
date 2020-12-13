@@ -6,6 +6,7 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     time_per_tick_(1.0 / cv::getTickFrequency()),
     is_clock_running_(false),
     is_showing_rendering(false),
+    is_MSAA_open_(false),
     start_time_(0.0),
     end_time_(0.0),
     duration_(0.0),
@@ -84,7 +85,7 @@ void Renderer::SaveImage(std::string filename){
     cv::flip(canvas_, canvas_, 0);
     cv::namedWindow("OutputImage");
     cv::imshow("OutputImage", canvas_);
-    cout<<"\nPush s to save image\n";
+    cout<<"\nPush 's to save image or push 'q' to \n";
     int k = cv::waitKey(0);
     if(k == 's'){
         if(imwrite(filename, canvas_)){
@@ -99,7 +100,7 @@ void Renderer::SaveImage(std::string filename){
     }
 }
 
-bool Renderer::LoadModel(string filename, string texture_name){
+bool Renderer::LoadModel(const string& filename, const string& texture_name){
     if(model_ptr_ == nullptr){
         model_ptr_ = new Model(filename, texture_name);
     }

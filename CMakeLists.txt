@@ -5,7 +5,6 @@ project(main)
 add_subdirectory(renderer)
 add_subdirectory(model)
 add_subdirectory(shader)
-add_subdirectory(texture)
 
 set(STATIC_LIB 
     Renderer

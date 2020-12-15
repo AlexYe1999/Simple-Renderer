@@ -1,7 +1,7 @@
 #include"renderer.h"
 namespace YeahooQAQ{
 
-Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& background_color)
+Renderer::Renderer(const unsigned int& width, const unsigned int& height, const Vec3f& background_color)
     :
     time_per_tick_(1.0 / cv::getTickFrequency()),
     is_clock_running_(false),
@@ -13,7 +13,7 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     canvas_width_(width),
     canvas_height_(height),
     background_color_(background_color),
-    canvas_(height, width, CV_64FC4, background_color),
+    canvas_(),
     model_ptr_(nullptr),
     z_buffer_(nullptr),
     surface_size_(0),
@@ -28,7 +28,9 @@ Renderer::Renderer(unsigned int width, unsigned int height, cv::Scalar& backgrou
     z_far_(0.0f),
     model_matrix_(),
     view_matrix_(),
-    projection_matrix_()
+    projection_matrix_(),
+    lights_(),
+    shader_()
 {
     z_buffer_ = new float[width* height];
 }
@@ -84,7 +86,7 @@ void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms)
     StartClock();
 }
 
-void Renderer::SaveImage(std::string filename){
+void Renderer::SaveImage(const std::string& filename){
     cv::flip(canvas_, canvas_, 0);
     cv::namedWindow("OutputImage");
     cv::imshow("OutputImage", canvas_);
@@ -101,6 +103,10 @@ void Renderer::SaveImage(std::string filename){
     else{
             cout<<"quit\n";
     }
+}
+
+bool Renderer::LoadSets(const vector<Light>& lights){
+    lights_ = lights;
 }
 
 bool Renderer::LoadModel(const string& filename, const string& texture_name){
@@ -122,19 +128,34 @@ bool Renderer::LoadModel(const string& filename, const string& texture_name){
     for(unsigned int index = 0; index < texture_size_; index++){
         textures_.push_back(model_ptr_->GetTexture(index));
     }
+    vertices_.resize(vertex_size_);
+    normals_.resize(normal_size_);
     return true;
 }
 
-bool Renderer::LoadTransformedVertex(){
+bool Renderer::MvpTransforme(){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
         return false;
     }
-    vertices_.clear();
-    normals_.clear();
+
     float f1 = (z_far_ - z_near_) * 0.5f;
     float f2 = (z_far_ + z_near_) * 0.5f;
     Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
+    
+    unsigned int light_size = lights_.size();
+    vector<Light> lights = lights_;
+    for(int index = 0; index < light_size; index++){
+        Vec4f v4 = mvp_matrix * lights[index].position.toVec4();
+        v4 /= v4.w;
+        Vec3f v3 = {
+            0.5f * canvas_width_ * (v4.x + 1.0f),
+            0.5f * canvas_height_ * (v4.y + 1.0f),
+            v4.z * f1 + f2
+        };
+        lights[index].position = v3;
+    }
+    shader_.LoadProperties(lights);
     for(unsigned int index = 0; index < vertex_size_; index++){
         Vec4f v4 = mvp_matrix * model_ptr_->GetVertex(index).toVec4(1.0f);
         v4 /= v4.w;
@@ -143,16 +164,19 @@ bool Renderer::LoadTransformedVertex(){
             0.5f * canvas_height_ * (v4.y + 1.0f),
             v4.z * f1 + f2
         };
-        vertices_.push_back(v3);
+        vertices_[index] = v3;
     }
+
     for(unsigned int index = 0; index < normal_size_; index++){
-        normals_.push_back(model_ptr_->GetNormal(index));
+        Vec3f vec = model_ptr_->GetNormal(index);
+        vec = mvp_matrix.toMatrix3().inversed().transposed() * vec;
+        normals_[index] = vec.normalized();
     }
 
     return true;
 }
 
-void Renderer::SetModelMatrix(const float x_axis, const float y_axis, const float z_axis){
+void Renderer::SetModelMatrix(const float& x_axis, const float& y_axis, const float& z_axis){
     float theta_x = x_axis * 3.1415926535898f / 180.0f;
     float theta_y = y_axis * 3.1415926535898f / 180.0f;
     Matrix4f model_matrix_x = {
@@ -177,7 +201,7 @@ void Renderer::SetViewMatrix(const Vec3f& eye_pos){
         {-eye_pos.x, -eye_pos.y, -eye_pos.z, 1.0f}
     };
 }
-void Renderer::SetProjectionMatrix(const float eye_fov, const float aspect_ratio, const float zNear, const float zFar){
+void Renderer::SetProjectionMatrix(const float& eye_fov, const float& aspect_ratio, const float& zNear, const float& zFar){
     z_near_ = zNear;
     z_far_ = zFar;
     float theta = eye_fov * 3.1415926535898f / 360.0f;
@@ -274,14 +298,19 @@ bool Renderer::RenderModel(){
         Vec3f vertex[3]{
             vertices_[indexes[0].vertex],
             vertices_[indexes[1].vertex],
-            vertices_[indexes[2].vertex],
+            vertices_[indexes[2].vertex]
+        };
+        Vec3f normals[3]{
+            normals_[indexes[0].normal],
+            normals_[indexes[1].normal],
+            normals_[indexes[2].normal]
         };
         Vec2f uv[3]{
             textures_[indexes[0].uv],         
             textures_[indexes[1].uv],    
             textures_[indexes[2].uv]
         };
-        RenderTriangles(vertex, uv);
+        RenderTriangles(vertex, normals, uv);
         if(is_showing_rendering){
             cv::imshow("Rendering", canvas_);
             cv::waitKey(1);
@@ -326,7 +355,7 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
     return true;
 }
 
-bool Renderer::RenderTriangles(Vec3f* vertex, Vec2f* uv){
+bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
     Vec2f bbox[2];
     FindBoundingBox(vertex, bbox);
     int max_x = static_cast<int>(bbox[1].x) + 1;
@@ -340,7 +369,10 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec2f* uv){
                     z_buffer_[y*canvas_width_+x] = pixel_z;
                     Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
                     Vec3f color = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
-                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z / 255.0f, color.y / 255.0f, color.x / 255.0f);
+                    Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
+                    FragmentShaderPayload payload(color, normal);
+                    color = shader_.NormalFragmentShader(payload);
+                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
                 }
             }
         }

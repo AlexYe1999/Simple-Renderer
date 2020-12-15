@@ -10,7 +10,7 @@ using namespace std;
 
 class Renderer{
 public:
-    Renderer(unsigned int width, unsigned int height, cv::Scalar& background_color);
+    Renderer(const unsigned int& width, const unsigned int& height, const Vec3f& background_color);
     ~Renderer();
 
 public:
@@ -21,23 +21,25 @@ public:
     
 public:
     void ShowImage(string window_name, const unsigned short delay_ms);
-    void SaveImage(string filename);
+    void SaveImage(const std::string& filename);
     void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
     void MSAA(bool is_open){is_MSAA_open_ = is_open;}
     void ClearCanvas(){
-        canvas_ = cv::Mat(canvas_height_, canvas_width_, CV_64FC4, background_color_);
+        canvas_ = cv::Mat(canvas_height_, canvas_width_, CV_64FC4,
+                                cv::Scalar(background_color_.z, background_color_.y, background_color_.x));
     }
 
 public:
     bool LoadModel(const string& filename, const string& texture_name);
-    bool LoadTransformedVertex();
+    bool LoadSets(const vector<Light>& lights);
 
 public:
-    void SetModelMatrix(const float x_axis, const float y_axis, const float z_axis);
+    bool MvpTransforme();
+    void SetModelMatrix(const float& x_axis, const float& y_axis, const float& z_axis);
     void SetViewMatrix(const Vec3f& eye_pos);
-    void SetProjectionMatrix(const float eye_fov, 
-                                                        const float aspect_ratio,
-                                                        const float zNear, float zFar);
+    void SetProjectionMatrix(const float& eye_fov, 
+                                                        const float& aspect_ratio,
+                                                        const float& zNear, const float& zFar);
 
 public:
     bool RenderPointModel();
@@ -46,7 +48,7 @@ public:
 
 public:
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
-    bool RenderTriangles(Vec3f* vertex, Vec2f* uv);
+    bool RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv);
 
 private:
     void FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]);
@@ -65,7 +67,7 @@ private:
 private: 
     const unsigned int canvas_width_;
     const unsigned int canvas_height_;
-    cv::Scalar background_color_;
+    Vec3f background_color_;
     cv::Mat canvas_;
 
 private:
@@ -86,6 +88,10 @@ private:
     Matrix4f model_matrix_;
     Matrix4f view_matrix_;
     Matrix4f projection_matrix_;
+
+private:
+    vector<Light> lights_;
+    Shader shader_;
 
 };
 

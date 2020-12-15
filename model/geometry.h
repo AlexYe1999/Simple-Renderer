@@ -1,10 +1,16 @@
 #ifndef GEOMETRY_H__
 #define GEOMETRY_H__
 #include<iostream>
-
+#include<cmath>
 namespace YeahooQAQ{
 using namespace std;
 
+template<typename T> struct Vec2;
+template<typename T> struct Vec3;
+template<typename T> struct Vec4;
+template<typename T> struct Matrix2;
+template<typename T> struct Matrix3;
+template<typename T> struct Matrix4;
 
 template<typename T>
 struct Vec4{
@@ -20,6 +26,7 @@ struct Vec4{
     inline T operator *(const Vec4<T>& vec) const {return T(x * vec.x + y * vec.y + z * vec.z, w * vec.w);}
     inline Vec4<T>& operator /=(const T& n) {x /= n; y /= n; z /= n; w /= n; return *this;}
     inline T& operator [](const int& index) {if(index == 0) {return x;}else if(index == 1){ return y;}else if(index == 2){ return z;}else{return w;}}
+    inline Vec3<T> toVec3() const{ return Vec3<T>(x, y, z);}
     template<typename> friend ostream& operator <<(ostream& os, const Vec4<T>& vec4);
 };
 
@@ -36,14 +43,16 @@ struct Vec3{
     inline Vec3<T> operator -(const Vec3<T>& vec) const {return Vec3<T>(x - vec.x, y - vec.y, z - vec.z);}
     inline Vec3<T> operator *(const T& n) const {return Vec3<T>(n * x, n * y, n * z);};
     inline T operator *(const Vec3<T>& vec) const {return T(x * vec.x + y * vec.y + z * vec.z);}    
-    inline Vec3<T> operator /=(const T& n) const {x /= n; y /= n; z /= n; return *this;}
-    inline Vec3<T> operator *=(const T& n) const {x *= n; y *= n; z *= n; return *this;}
+    inline Vec3<T> operator /=(const T& n)  {x /= n; y /= n; z /= n; return *this;}
+    inline Vec3<T> operator *=(const T& n)  {x *= n; y *= n; z *= n; return *this;}
+    inline Vec3<T> operator *(const Matrix3<T>& matrix) const {return Vec3<T>((*this)*matrix.vec[0], (*this)*matrix.vec[1], (*this)*matrix.vec[2]);};
     inline T& operator [](const int& index) {if(index == 0) {return x;}else if(index == 1){ return y;}else if(index == 2){ return z;}}
     inline  Vec3<T> cross(const Vec3<T>& vec) const {return Vec3<T>(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);}
     inline Vec3<T> normalized(){return Vec3<T>((*this) /= sqrt(x*x + y*y + z*z));}
     inline Vec4<T> toVec4(const T& w) const { return Vec4<T>(x, y, z, w);}
     inline Vec4<T> toVec4() const{ return Vec4<T>(x, y, z, T(0));}
     template<typename> friend ostream& operator <<(ostream& os, const Vec3<T>& vec3);
+
 };
 
 template<typename T>
@@ -105,6 +114,7 @@ struct Matrix4{
     inline Matrix4<T> operator *(const T& n) const{return Matrix4<T>(vec[0] * n, vec[1] * n, vec[2] * n,  vec[3] * n);}
     inline Matrix4<T>& operator /=(const T& n) {return *this;}
     inline Vec4<T>& operator [](const int& index) {return vec[index];}
+    inline Matrix3<T> toMatrix3() const {return Matrix3<T>(vec[0].toVec3(), vec[1].toVec3(), vec[2].toVec3());};
     template<typename> friend ostream& operator <<(ostream& os, const Matrix4<T>& m4);
     inline Vec4<T> operator *(const Vec4<T>& vec4){
         return Vec4<T>{
@@ -157,8 +167,8 @@ struct Matrix3{
     inline Vec3<T> operator*(const Vec3<T>& vec3){
         return Vec3<T>{
             vec[0].x * vec3.x + vec[1].x * vec3.y + vec[2].x * vec3.z,
-            vec[0].y * vec3.x + vec[1].x * vec3.y + vec[2].x * vec3.z,
-            vec[0].z * vec3.x + vec[1].x * vec3.y + vec[2].x * vec3.z
+            vec[0].y * vec3.x + vec[1].y * vec3.y + vec[2].y * vec3.z,
+            vec[0].z * vec3.x + vec[1].z * vec3.y + vec[2].z * vec3.z
         };
     }
     inline Matrix3<T> operator *(const Matrix3<T>& m3) const{

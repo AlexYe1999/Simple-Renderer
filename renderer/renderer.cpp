@@ -117,6 +117,7 @@ bool Renderer::LoadModel(const string& filename, const string& texture_name){
         cerr <<"Model has been loaded\n";
         return false;
     }
+
     surface_size_ = model_ptr_->GetSurfeceSize();
     vertex_size_ = model_ptr_->GetVertexSize();
     normal_size_ = model_ptr_->GetNormalSize();
@@ -139,21 +140,25 @@ bool Renderer::MvpTransforme(){
         return false;
     }
 
+    unsigned int z_buffer_size = canvas_width_ * canvas_height_;
+    for(int i = 0; i <  z_buffer_size; i++){
+        z_buffer_[i] = z_far_;
+    };
+
     float f1 = (z_far_ - z_near_) * 0.5f;
     float f2 = (z_far_ + z_near_) * 0.5f;
     Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
     
-    unsigned int light_size = lights_.size();
     vector<Light> lights = lights_;
-    for(int index = 0; index < light_size; index++){
-        Vec4f v4 = mvp_matrix * lights[index].position.toVec4();
+    for(Light& light : lights){
+        Vec4f v4 = mvp_matrix * light.position.toVec4(1.0f);
         v4 /= v4.w;
         Vec3f v3 = {
             0.5f * canvas_width_ * (v4.x + 1.0f),
             0.5f * canvas_height_ * (v4.y + 1.0f),
             v4.z * f1 + f2
         };
-        lights[index].position = v3;
+        light.position = v3;
     }
     shader_.LoadProperties(lights);
     for(unsigned int index = 0; index < vertex_size_; index++){
@@ -168,8 +173,7 @@ bool Renderer::MvpTransforme(){
     }
 
     for(unsigned int index = 0; index < normal_size_; index++){
-        Vec3f vec = model_ptr_->GetNormal(index);
-        vec = mvp_matrix.toMatrix3().inversed().transposed() * vec;
+        Vec3f vec = model_ptr_->GetNormal(index) * mvp_matrix.toMatrix3().inversed();
         normals_[index] = vec.normalized();
     }
 
@@ -261,12 +265,12 @@ bool Renderer::RenderPointModel(){
 
 }
 
-bool Renderer::RenderWireModel(cv::Scalar color){
+bool Renderer::RenderWireEdge(const Vec3f& color){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
         return false;
     }
-    cout<<"Rendering wire ...\n";
+    cout<<"Rendering edge ...\n";
 
     for(int index = 0; index < surface_size_; index++){
         vector<Vec3i>& surface = surfaces_[index];
@@ -287,12 +291,49 @@ bool Renderer::RenderWireModel(cv::Scalar color){
     return true;
 }
 
-bool Renderer::RenderModel(){
+bool Renderer::RenderNormal(const Vec3f& color){
+    if(model_ptr_ == nullptr){
+        cerr << "Model heven't been loaded\n";
+        return false;
+    }
+    cout<<"Rendering normal ...\n";
 
-    unsigned int z_buffer_size = canvas_width_ * canvas_height_;
-    for(int i = 0; i <  z_buffer_size; i++){
-        z_buffer_[i] = z_far_;
-    };
+    for(int index = 0; index < surface_size_; index++){
+        vector<Vec3i>& surface = surfaces_[index];
+        Vec3f start[3]{
+            vertices_[surfaces_[index][0].vertex],
+            vertices_[surfaces_[index][1].vertex],
+            vertices_[surfaces_[index][2].vertex]
+        };
+        Vec3f normals[3]{
+            normals_[surfaces_[index][0].normal],
+            normals_[surfaces_[index][1].normal],
+            normals_[surfaces_[index][2].normal]
+        };
+        Vec3f end[3]{
+            start[0] + normals[0]*12,
+            start[1] + normals[1]*12,
+            start[2] + normals[2]*12
+        };
+        for(int i = 0; i < 3; i++){
+            if(start[i].z - 0.01f < z_buffer_[static_cast<int>(start[i].y) * canvas_width_+ static_cast<int>(start[i].x)]){
+                DrawLine(start[i], end[i], (normals[i]*-1.0f+Vec3f(1.0f,1.0f,1.0f))*0.5f);
+            }
+            if(is_showing_rendering){
+                cv::imshow("Rendering", canvas_);
+                cv::waitKey(1);
+            }
+        }
+    }
+
+}
+
+bool Renderer::RenderModel(){
+    if(model_ptr_ == nullptr){
+        cerr << "Model heven't been loaded\n";
+        return false;
+    }
+    cout<<"Rendering model ...\n";
     for(int index = 0; index < surface_size_; index++){
         vector<Vec3i>& indexes = surfaces_[index];
         Vec3f vertex[3]{
@@ -319,7 +360,7 @@ bool Renderer::RenderModel(){
     return true;
 }
 
-bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
+bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const Vec3f& color){
     bool is_reverse = false;
     if(abs(p1.x - p2.x) < abs(p1.y - p2.y)){
         swap(p1.x, p1.y);
@@ -340,12 +381,57 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const cv::Scalar& color){
 
     for(int x = p1.x; x < x_end; x += 1){ 
         if(is_reverse){
-            canvas_.at<cv::Scalar>(x, y) = color;            
+            canvas_.at<cv::Scalar>(x, y) = cv::Scalar(color.z, color.y, color.x);            
         }
         else{
-            canvas_.at<cv::Scalar>(y, x) = color;            
+            canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
         }
         error += derror;
+        if(error > dx){
+            y += p2.y > p1.y ? 1 : -1;
+            error -= dx * 2;
+        }
+    }
+
+    return true;
+}
+
+bool Renderer::DrawLine(Vec3f p1, Vec3f p2, const Vec3f& color){
+    bool is_reverse = false;
+    if(abs(p1.x - p2.x) < abs(p1.y - p2.y)){
+        swap(p1.x, p1.y);
+        swap(p2.x, p2.y);
+        is_reverse = true;
+    }
+    
+    if(p1.x > p2.x){
+        swap(p1, p2);
+    }
+
+    int dx = p2.x - p1.x;
+    int dy = p2.y - p1.y;
+    int x_end = p2.x;
+    int y =  p1.y;
+    int derror = abs(dy) * 2;
+    int error = 0;
+    float dz = (p2.z - p1.z) / dx;
+    float z = p1.z;
+
+    for(int x = p1.x; x < x_end; x++){ 
+        if(is_reverse){
+            if(z < z_buffer_[x * canvas_width_+ y]){
+                z_buffer_[x * canvas_width_+ y] = z;
+                canvas_.at<cv::Scalar>(x, y) = cv::Scalar(color.z, color.y, color.x);          
+            }            
+        }
+        else{
+            if(z < z_buffer_[y * canvas_width_+ x]){
+                z_buffer_[y * canvas_width_+ x] = z;
+                canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
+            }
+        }
+        error += derror;
+        z += dz;
         if(error > dx){
             y += p2.y > p1.y ? 1 : -1;
             error -= dx * 2;
@@ -365,13 +451,15 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
             if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
                 Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
                 float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
-                if(pixel_z <= z_buffer_[y * canvas_width_+ x]){
+                if(pixel_z < z_buffer_[y * canvas_width_+ x]){
                     z_buffer_[y*canvas_width_+x] = pixel_z;
                     Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
-                    Vec3f color = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
+                    Vec3f color(1.0f, 1.0f, 1.0f);
                     Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
-                    FragmentShaderPayload payload(color, normal);
-                    color = shader_.NormalFragmentShader(payload);
+                    Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
+                    FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal, texture);
+                    //color = shader_.PhongFragmentShader(payload);
+                    color = shader_.TextureFragmentShader(payload);
                     canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
                 }
             }

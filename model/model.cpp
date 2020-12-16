@@ -87,7 +87,7 @@ const Vec3f Model::getColor(float u, float v){
         int u_img = u * image_width_;
         int v_img = (1.0f - v) * image_height_;
         auto color = image_data_.at<cv::Vec3b>(v_img, u_img);
-        return Vec3f(color[0], color[1], color[2]);
+        return Vec3f(color[0] / 255.0f, color[1] / 255.0f, color[2] / 255.0f);
     }
 }
 

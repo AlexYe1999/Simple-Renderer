@@ -3,7 +3,7 @@
 #include"../model/geometry.h"
 #include<vector>
 namespace YeahooQAQ{
-
+using namespace std;
 struct Light{
     Vec3f position;
     Vec3f intensity;
@@ -12,10 +12,12 @@ struct Light{
 };
 
 struct FragmentShaderPayload{
+    Vec3f position;
     Vec3f color;
     Vec3f normal;
-    FragmentShaderPayload(const Vec3f& _color, const Vec3f& _normal)
-        :   color(_color),normal(_normal){}
+    Vec3f texture;
+    FragmentShaderPayload(const Vec3f& _position, const Vec3f& _color, const Vec3f& _normal, const Vec3f& _texture)
+        :   position(_position), color(_color), normal(_normal), texture(_texture){}
 };
 
 class Shader{

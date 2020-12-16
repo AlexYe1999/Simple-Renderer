@@ -43,11 +43,13 @@ public:
 
 public:
     bool RenderPointModel();
-    bool RenderWireModel(cv::Scalar color);
+    bool RenderWireEdge(const Vec3f& color);
+    bool RenderNormal(const Vec3f& color);
     bool RenderModel();
 
 public:
-    bool Draw2DLine(Vec2i p1, Vec2i p2, const  cv::Scalar& color);
+    bool DrawLine(Vec3f p1, Vec3f p2, const  Vec3f& color);
+    bool Draw2DLine(Vec2i p1, Vec2i p2, const  Vec3f& color);
     bool RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv);
 
 private:

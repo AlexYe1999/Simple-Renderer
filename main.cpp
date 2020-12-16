@@ -6,12 +6,15 @@ using namespace YeahooQAQ;
 int main(int argc, char* argv[]){
     Renderer renderer(1000, 1000, Vec3f(0.0f, 0.0f, 0.0f));
     vector<Light> lights{
-        {Vec3f(5, 3, 4),Vec3f(0.5, 0.5, 0.5)}
+        {Vec3f(15, 0, 0),Vec3f(1.0f, 1.0f, 1.0f)},
+        {Vec3f(0, 15, 0),Vec3f(1.0f, 1.0f, 1.0f)},
+        {Vec3f(0, 0, 15),Vec3f(1.0f, 1.0f, 1.0f)},
+        {Vec3f(0, 0, -15),Vec3f(1.0f, 1.0f, 1.0f)}
     };
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
     renderer.LoadSets(lights);
-    Vec3f eye_pos(0.0f, 0.0f, -15.0f);
-    float theta_per_second = 5.0f;
+    Vec3f eye_pos(0.0f, 0.0f, -10.0f);
+    float theta_per_second = 2.0f;
     int count = 0;
     char key = '0';
     renderer.ShowProcessing(false);
@@ -33,16 +36,17 @@ int main(int argc, char* argv[]){
         renderer.ShowProcessing(false);
 
         renderer.ClearCanvas();
-        renderer.SetModelMatrix(10.0f, count * theta_per_second, 0.0f);
+        renderer.SetModelMatrix(25.0, count * theta_per_second, 0.0f);
         renderer.SetViewMatrix(eye_pos);
-        renderer.SetProjectionMatrix(30.0f, 1.0f, 0.1, 50.0f);   
+        renderer.SetProjectionMatrix(45.0f, 1.0f, 0.1, 50.0f);   
 
         renderer.MvpTransforme();
 
         renderer.RenderModel();
+        //renderer.RenderNormal(Vec3f(1.0f, 1.0f, 1.0f));
 
         renderer.GetTimeCost();
-        renderer.ShowImage("Rendering", 8);
+        renderer.ShowImage("Rendering",100);
         renderer.ClearTimeCounter();
         count++;
     }

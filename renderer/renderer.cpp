@@ -7,6 +7,7 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     is_clock_running_(false),
     is_showing_rendering(false),
     is_MSAA_open_(false),
+    MSAA_stride_(0),
     start_time_(0.0),
     end_time_(0.0),
     duration_(0.0),
@@ -90,7 +91,7 @@ void Renderer::SaveImage(const std::string& filename){
     cv::flip(canvas_, canvas_, 0);
     cv::namedWindow("OutputImage");
     cv::imshow("OutputImage", canvas_);
-    cout<<"\nPush 's to save image or push 'q' to \n";
+    cout<<"\nPush 's to save image or push 'q' to quit\n";
     int k = cv::waitKey(0);
     if(k == 's'){
         if(imwrite(filename, canvas_)){
@@ -444,11 +445,30 @@ bool Renderer::DrawLine(Vec3f p1, Vec3f p2, const Vec3f& color){
 bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
     Vec2f bbox[2];
     FindBoundingBox(vertex, bbox);
-    int max_x = static_cast<int>(bbox[1].x) + 1;
-    int max_y = static_cast<int>(bbox[1].y) + 1;
+    int max_x = static_cast<int>(bbox[1].x)+1;
+    int max_y = static_cast<int>(bbox[1].y)+1;
+    float fix = 1.0f;
     for(int y = bbox[0].y; y < max_y; y++){
         for(int x = bbox[0].x; x < max_x; x++){
-            if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
+            if(is_MSAA_open_){
+                unsigned int count = 0;
+                const unsigned int x_begin = x - MSAA_stride_ > 0 ? x - MSAA_stride_ : 0;
+                const unsigned int y_begin = y - MSAA_stride_ > 0 ? y - MSAA_stride_ : 0;
+                const unsigned int x_end = x + MSAA_stride_ > 0 ? x + MSAA_stride_ : canvas_width_-1;
+                const unsigned int y_end = y + MSAA_stride_ > 0 ? y + MSAA_stride_ : canvas_height_-1;
+                for(unsigned int y_sub = y_begin; y_sub < y_end; y_sub++){
+                    for(unsigned int x_sub = x_begin; x_sub < x; x_sub++){
+                        if(IsInsideTriangle(vertex, Vec2f(x_sub+0.5, y_sub+0.5))){
+                            count++;
+                        }
+                    }
+                }
+                fix = count /sqrt(2 * MSAA_stride_ + 1);
+            }
+            else{
+                fix = IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5)) ? 1.0f : 0.0f;
+            }
+            if(fix > 0.001f){
                 Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
                 float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
                 if(pixel_z < z_buffer_[y * canvas_width_+ x]){
@@ -459,8 +479,8 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
                     Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
                     FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal, texture);
                     //color = shader_.PhongFragmentShader(payload);
-                    color = shader_.TextureFragmentShader(payload);
-                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
+                    color = shader_.TextureFragmentShader(payload) * fix;
+                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);            
                 }
             }
         }

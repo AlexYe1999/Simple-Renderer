@@ -6,19 +6,23 @@ using namespace YeahooQAQ;
 int main(int argc, char* argv[]){
     Renderer renderer(1000, 1000, Vec3f(0.0f, 0.0f, 0.0f));
     vector<Light> lights{
-        {Vec3f(15, 0, 0),Vec3f(1.0f, 1.0f, 1.0f)},
-        {Vec3f(0, 15, 0),Vec3f(1.0f, 1.0f, 1.0f)},
-        {Vec3f(0, 0, 15),Vec3f(1.0f, 1.0f, 1.0f)},
-        {Vec3f(0, 0, -15),Vec3f(1.0f, 1.0f, 1.0f)}
+        {Vec3f(0, 1.5, 0),Vec3f(100000.0f, 100000.0f, 100000.0f)},
+        {Vec3f(0, 3, -5),Vec3f(1000000.0f, 1000000.0f, 100000.0f)},
+        {Vec3f(-2, 0, -2),Vec3f(500000.0f, 0.0f, 0.0f)}, 
+        {Vec3f(2, 0, -2),Vec3f(0.0f, 100000.0f, 0.0f)},     
+        {Vec3f(2, 2, -2),Vec3f(0.0f, 0.0f, 500000.0f)},  
+        {Vec3f(-2, 2, -2),Vec3f(100000.0f, 100000.0f, 0.0f)}, 
+        {Vec3f(2, 2, -2),Vec3f(10000.0f, 10000.0f, 0.0f)},         
     };
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
     renderer.LoadSets(lights);
-    Vec3f eye_pos(0.0f, 0.0f, -10.0f);
+    Vec3f eye_pos(0.0f, 0.0f, -5.0f);
     float theta_per_second = 2.0f;
     int count = 0;
     char key = '0';
     renderer.ShowProcessing(false);
-    while((key = cv::waitKey(5)) != 'q'){
+    renderer.MSAA(false, 1);
+/*     while((key = cv::waitKey(5)) != ' '){
         if(key == 'w'){
             eye_pos.z += 0.2f;
         }
@@ -32,8 +36,7 @@ int main(int argc, char* argv[]){
             eye_pos.x += 0.2f;
         }
 
-        renderer.StartClock();        
-        renderer.ShowProcessing(false);
+        renderer.StartClock();
 
         renderer.ClearCanvas();
         renderer.SetModelMatrix(25.0, count * theta_per_second, 0.0f);
@@ -43,13 +46,21 @@ int main(int argc, char* argv[]){
         renderer.MvpTransforme();
 
         renderer.RenderModel();
-        //renderer.RenderNormal(Vec3f(1.0f, 1.0f, 1.0f));
 
         renderer.GetTimeCost();
         renderer.ShowImage("Rendering",100);
         renderer.ClearTimeCounter();
         count++;
-    }
+    } */
+
+        renderer.ClearCanvas();
+        renderer.SetModelMatrix(25.0, -30.0f, 0.0f);
+        renderer.SetViewMatrix(eye_pos);
+        renderer.SetProjectionMatrix(45.0f, 1.0f, 0.1, 50.0f);   
+
+        renderer.MvpTransforme();
+
+        renderer.RenderModel();
 
     renderer.SaveImage("../output.png");
     return 0;

@@ -81,7 +81,7 @@ Model::~Model(){};
 
 const Vec3f Model::getColor(float u, float v){
     if(image_data_.empty()){
-        return Vec3f(rand() % 256, rand() % 256, rand() % 256);
+        return Vec3f(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
     }
     else{
         int u_img = u * image_width_;

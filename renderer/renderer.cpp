@@ -7,7 +7,6 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     is_clock_running_(false),
     is_showing_rendering(false),
     is_MSAA_open_(false),
-    MSAA_stride_(0),
     start_time_(0.0),
     end_time_(0.0),
     duration_(0.0),
@@ -94,7 +93,7 @@ void Renderer::SaveImage(const std::string& filename){
     cout<<"\nPush 's to save image or push 'q' to quit\n";
     int k = cv::waitKey(0);
     if(k == 's'){
-        if(imwrite(filename, canvas_)){
+        if(imwrite(filename, canvas_*255.0f)){
             cout<<"Save the image sucessfully\n";
         }
         else{
@@ -161,7 +160,7 @@ bool Renderer::MvpTransforme(){
         };
         light.position = v3;
     }
-    shader_.LoadProperties(lights);
+    shader_.LoadProperties(lights, Vec3f(500.0f, 500.0f, 0.0f));
     for(unsigned int index = 0; index < vertex_size_; index++){
         Vec4f v4 = mvp_matrix * model_ptr_->GetVertex(index).toVec4(1.0f);
         v4 /= v4.w;
@@ -312,9 +311,9 @@ bool Renderer::RenderNormal(const Vec3f& color){
             normals_[surfaces_[index][2].normal]
         };
         Vec3f end[3]{
-            start[0] + normals[0]*12,
-            start[1] + normals[1]*12,
-            start[2] + normals[2]*12
+            start[0] + normals[0]*canvas_width_ * 0.01f,
+            start[1] + normals[1]*canvas_height_ * 0.01f,
+            start[2] + normals[2]*z_far_ * 0.01f
         };
         for(int i = 0; i < 3; i++){
             if(start[i].z - 0.01f < z_buffer_[static_cast<int>(start[i].y) * canvas_width_+ static_cast<int>(start[i].x)]){
@@ -329,12 +328,13 @@ bool Renderer::RenderNormal(const Vec3f& color){
 
 }
 
-bool Renderer::RenderModel(){
+bool Renderer::RenderModel(const ShaderType& shader_type){
     if(model_ptr_ == nullptr){
         cerr << "Model heven't been loaded\n";
         return false;
     }
     cout<<"Rendering model ...\n";
+    shader_.Setting(shader_type);
     for(int index = 0; index < surface_size_; index++){
         vector<Vec3i>& indexes = surfaces_[index];
         Vec3f vertex[3]{
@@ -447,40 +447,53 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
     FindBoundingBox(vertex, bbox);
     int max_x = static_cast<int>(bbox[1].x)+1;
     int max_y = static_cast<int>(bbox[1].y)+1;
-    float fix = 1.0f;
-    for(int y = bbox[0].y; y < max_y; y++){
-        for(int x = bbox[0].x; x < max_x; x++){
-            if(is_MSAA_open_){
+    if(!is_MSAA_open_){
+        for(int y = bbox[0].y; y < max_y; y++){
+            for(int x = bbox[0].x; x < max_x; x++){
+                if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
+                    Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
+                    float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
+                    if(pixel_z < z_buffer_[y * canvas_width_+ x]){
+                        z_buffer_[y*canvas_width_+x] = pixel_z;
+                        Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
+                        Vec3f color(1.0f, 1.0f, 1.0f);
+                        Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
+                        Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
+                        FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal, texture);
+                        color = shader_.FragmentShader(payload);
+                        canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);            
+                    }
+                }
+            }
+        }
+    }
+    else{
+        for(int y = bbox[0].y; y < max_y; y++){
+            for(int x = bbox[0].x; x < max_x; x++){
+                float pixel_z = 0.0f;
                 unsigned int count = 0;
-                const unsigned int x_begin = x - MSAA_stride_ > 0 ? x - MSAA_stride_ : 0;
-                const unsigned int y_begin = y - MSAA_stride_ > 0 ? y - MSAA_stride_ : 0;
-                const unsigned int x_end = x + MSAA_stride_ > 0 ? x + MSAA_stride_ : canvas_width_-1;
-                const unsigned int y_end = y + MSAA_stride_ > 0 ? y + MSAA_stride_ : canvas_height_-1;
-                for(unsigned int y_sub = y_begin; y_sub < y_end; y_sub++){
-                    for(unsigned int x_sub = x_begin; x_sub < x; x_sub++){
-                        if(IsInsideTriangle(vertex, Vec2f(x_sub+0.5, y_sub+0.5))){
+                float offset[2] = {0.3f, 0.7f};
+                for(int i = 0; i < 2; i++){
+                    for(int j = 0 ; j < 2; j++){
+                        Vec2f pixel(x+offset[i], y+offset[j]);
+                        if(IsInsideTriangle(vertex, pixel)){
                             count++;
+                            Vec3f barycentric = BarycentricInterpolation(vertex, pixel);
+                            pixel_z += barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
                         }
                     }
                 }
-                fix = count /sqrt(2 * MSAA_stride_ + 1);
-            }
-            else{
-                fix = IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5)) ? 1.0f : 0.0f;
-            }
-            if(fix > 0.001f){
-                Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
-                float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
+                pixel_z = count > 1 ? pixel_z / count : z_far_;           
                 if(pixel_z < z_buffer_[y * canvas_width_+ x]){
                     z_buffer_[y*canvas_width_+x] = pixel_z;
+                    Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
                     Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
                     Vec3f color(1.0f, 1.0f, 1.0f);
                     Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
                     Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
-                    FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal, texture);
-                    //color = shader_.PhongFragmentShader(payload);
-                    color = shader_.TextureFragmentShader(payload) * fix;
-                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);            
+                    FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal.normalized(), texture);
+                    color = shader_.FragmentShader(payload);
+                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
                 }
             }
         }
@@ -493,10 +506,11 @@ Vec3f Renderer::BarycentricInterpolation(const Vec3f vec[3],  const Vec2f& pixel
     Vec2f v0(vec[0].x, vec[0].y);
     Vec2f v1(vec[1].x, vec[1].y);
     Vec2f v2(vec[2].x, vec[2].y);
-    float alpha = (pixel-v1).cross(v2-v1) / (v2 - v1).cross(v0-v1);
-    float beta = (pixel-v2).cross(v0-v2) / (v0-v2).cross(v1-v2);
-    float gamma = (pixel-v0).cross(v1-v0) / (v2 - v0).cross(v1-v0);
-    return Vec3f(abs(alpha), abs(beta), abs(gamma)); 
+    float area = 1.0f / (v0-v1).cross(v2 - v1);
+    float alpha = (pixel-v1).cross(v2-v1) * area;
+    float beta = (pixel-v2).cross(v0-v2) * area;
+    float gamma = (pixel-v0).cross(v1-v0) * area;
+    return Vec3f(alpha, beta, gamma); 
 }
 
 void Renderer::FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]){

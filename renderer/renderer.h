@@ -23,7 +23,7 @@ public:
     void ShowImage(string window_name, const unsigned short delay_ms);
     void SaveImage(const std::string& filename);
     void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
-    void MSAA(const bool& is_open, const unsigned int& MSAA_stride){is_MSAA_open_ = is_open; MSAA_stride_ = MSAA_stride;}
+    void MSAA(const bool& is_open){is_MSAA_open_ = is_open;}
     void ClearCanvas(){
         canvas_ = cv::Mat(canvas_height_, canvas_width_, CV_64FC4,
                                 cv::Scalar(background_color_.z, background_color_.y, background_color_.x));
@@ -45,7 +45,7 @@ public:
     bool RenderPointModel();
     bool RenderWireEdge(const Vec3f& color);
     bool RenderNormal(const Vec3f& color);
-    bool RenderModel();
+    bool RenderModel(const ShaderType& shader_type);
 
 public:
     bool DrawLine(Vec3f p1, Vec3f p2, const  Vec3f& color);
@@ -62,7 +62,6 @@ private:
     bool is_clock_running_;
     bool is_showing_rendering;
     bool is_MSAA_open_;
-    unsigned int MSAA_stride_;
     int64 start_time_;
     int64 end_time_;
     int64 duration_;

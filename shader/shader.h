@@ -4,6 +4,16 @@
 #include<vector>
 namespace YeahooQAQ{
 using namespace std;
+
+enum class ShaderType{
+    DEFAULT,
+    NORMAL_SHADING,
+    PHONG_SHADING,
+    TEXTURE_SHADING,
+    BUMPSHADING,
+    DISPLACEMENT_SHADING
+};
+
 struct Light{
     Vec3f position;
     Vec3f intensity;
@@ -28,7 +38,10 @@ public:
 public:
     void VertexShader();
 public:
-    Vec3f LoadProperties(const vector<Light>& lights);
+    bool LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos);
+    bool Setting(const ShaderType& shader_type){shader_type_ = shader_type;};
+    Vec3f FragmentShader(const FragmentShaderPayload& payload);
+private:
     Vec3f NormalFragmentShader(const FragmentShaderPayload& payload);
     Vec3f PhongFragmentShader(const FragmentShaderPayload& payload);
     Vec3f TextureFragmentShader(const FragmentShaderPayload& payload);
@@ -36,6 +49,8 @@ public:
     Vec3f DisplacementFragmentShader(const FragmentShaderPayload& payload);
 
 private:
+    ShaderType shader_type_;
+    Vec3f eye_pos_;
     vector<Light> lights_;
 };
     

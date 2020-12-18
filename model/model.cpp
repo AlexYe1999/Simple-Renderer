@@ -79,7 +79,7 @@ Model::Model(const string& filename, const string& texture_name)
 
 Model::~Model(){};
 
-const Vec3f Model::getColor(float u, float v){
+const Vec3f Model::getColor(const float& u, const float& v){
     if(image_data_.empty()){
         return Vec3f(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
     }

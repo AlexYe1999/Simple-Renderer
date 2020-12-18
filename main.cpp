@@ -12,17 +12,16 @@ int main(int argc, char* argv[]){
         {Vec3f(2, 0, -2),Vec3f(0.0f, 100000.0f, 0.0f)},     
         {Vec3f(2, 2, -2),Vec3f(0.0f, 0.0f, 500000.0f)},  
         {Vec3f(-2, 2, -2),Vec3f(100000.0f, 100000.0f, 0.0f)}, 
-        {Vec3f(2, 2, -2),Vec3f(10000.0f, 10000.0f, 0.0f)},         
+        {Vec3f(2, 2, -2),Vec3f(10000.0f, 10000.0f, 0.0f)}
     };
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
     renderer.LoadSets(lights);
-    Vec3f eye_pos(0.0f, 0.0f, -5.0f);
+    Vec3f eye_pos(0.0f, 0.0f, -8.0f);
     float theta_per_second = 2.0f;
     int count = 0;
     char key = '0';
     renderer.ShowProcessing(false);
-    renderer.MSAA(false, 1);
-/*     while((key = cv::waitKey(5)) != ' '){
+    while((key = cv::waitKey(2)) != ' '){
         if(key == 'w'){
             eye_pos.z += 0.2f;
         }
@@ -45,23 +44,14 @@ int main(int argc, char* argv[]){
 
         renderer.MvpTransforme();
 
-        renderer.RenderModel();
+        renderer.RenderModel(ShaderType::TEXTURE_SHADING);
 
         renderer.GetTimeCost();
-        renderer.ShowImage("Rendering",100);
+        renderer.ShowImage("Rendering",20);
         renderer.ClearTimeCounter();
         count++;
-    } */
+    }
 
-        renderer.ClearCanvas();
-        renderer.SetModelMatrix(25.0, -30.0f, 0.0f);
-        renderer.SetViewMatrix(eye_pos);
-        renderer.SetProjectionMatrix(45.0f, 1.0f, 0.1, 50.0f);   
-
-        renderer.MvpTransforme();
-
-        renderer.RenderModel();
-
-    renderer.SaveImage("../output.png");
+    renderer.SaveImage("../output0.jpg");
     return 0;
 }

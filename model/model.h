@@ -23,7 +23,7 @@ public:
     const Vec3f& GetVertex(const int index) const{return vertices_[index];}    
     const Vec3f& GetNormal(const int index) const{return normals_[index];}    
     const Vec2f& GetTexture(const int index) const{return textures_[index];}
-    const Vec3f getColor(float u, float v);
+    const Vec3f getColor(const float& u, const float& v);
     
 private:
     vector<vector<Vec3i>> surfaces_;

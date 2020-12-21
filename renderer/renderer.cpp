@@ -160,7 +160,9 @@ bool Renderer::MvpTransforme(){
         };
         light.position = v3;
     }
-    shader_.LoadProperties(lights, Vec3f(500.0f, 500.0f, 0.0f));
+    //shader_.LoadProperties(lights, Vec3f(canvas_width_*0.5f, canvas_height_*0.5f, 0.0f));
+    shader_.LoadProperties(lights, Vec3f(canvas_width_*0.5f, canvas_height_*0.5f, 0.0f));
+    
     for(unsigned int index = 0; index < vertex_size_; index++){
         Vec4f v4 = mvp_matrix * model_ptr_->GetVertex(index).toVec4(1.0f);
         v4 /= v4.w;

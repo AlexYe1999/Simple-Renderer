@@ -48,7 +48,8 @@ Vec3f Shader::FragmentShader(const FragmentShaderPayload& payload){
 
 Vec3f Shader::NormalFragmentShader(const FragmentShaderPayload& payload){
     return (payload.normal+Vec3f(1.0f,1.0f,1.0f))*0.5f;
-} 
+}
+
 Vec3f Shader::PhongFragmentShader(const FragmentShaderPayload& payload){
     Vec3f Ka(0.0000007f, 0.000007f, 0.0000007f);
     Vec3f Kd = payload.color;

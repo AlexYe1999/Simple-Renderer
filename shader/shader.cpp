@@ -58,7 +58,7 @@ Vec3f Shader::PhongFragmentShader(const FragmentShaderPayload& payload){
     Vec3f pos = payload.position;
     Vec3f normal = payload.normal; 
     Vec3f pos2eye = eye_pos_ - pos;
-    Vec3f dst_color(0.0f, 0.0f, 0.0f);
+    Vec3f dst_color(0.1f, 0.1f, 0.1f);
 
     for(const Light& light : lights_){
         Vec3f light_intensity = light.intensity;        
@@ -75,7 +75,7 @@ Vec3f Shader::TextureFragmentShader(const FragmentShaderPayload& payload){
     Vec3f Ka(0.00001f, 0.00001f, 0.00001f);
     Vec3f Kd = payload.texture;
     Vec3f Ks(0.7f, 0.7f, 0.7f);
-    const float p = 80;
+    const float p = 150;
     Vec3f pos = payload.position;
     Vec3f normal = payload.normal; 
     Vec3f pos2eye = eye_pos_ - pos;

@@ -54,6 +54,7 @@ struct Vec3{
     inline Vec3<T> normalized(){return (*this)/sqrt(x*x + y*y + z*z);}
     inline Vec4<T> toVec4(const T& w) const { return Vec4<T>(x, y, z, w);}
     inline Vec4<T> toVec4() const{ return Vec4<T>(x, y, z, T(0));}
+    inline Vec2<T> toVec2() const{ return Vec2<T>(x, y);}
     template<typename> friend ostream& operator <<(ostream& os, const Vec3<T>& vec3);
 
 };

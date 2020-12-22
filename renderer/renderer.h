@@ -24,14 +24,11 @@ public:
     void SaveImage(const std::string& filename);
     void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
     void MSAA(const bool& is_open){is_MSAA_open_ = is_open;}
-    void ClearCanvas(){
-        canvas_ = cv::Mat(canvas_height_, canvas_width_, CV_64FC4,
-                                cv::Scalar(background_color_.z, background_color_.y, background_color_.x));
-    }
+    void ClearCanvas();
 
 public:
     bool LoadModel(const string& filename, const string& texture_name);
-    bool LoadSets(const vector<Light>& lights);
+    bool LoadLight(const vector<Light>& lights);
 
 public:
     bool MvpTransforme();
@@ -58,6 +55,9 @@ private:
     Vec3f BarycentricInterpolation(const Vec3f vertex[3], const Vec2f& pixel);
 
 private:
+    bool SetPixel(const Vec2i& pos, const Vec3f& color);
+
+private:
     const  double time_per_tick_;
     bool is_clock_running_;
     bool is_showing_rendering;
@@ -70,10 +70,10 @@ private:
     const unsigned int canvas_width_;
     const unsigned int canvas_height_;
     Vec3f background_color_;
-    cv::Mat canvas_;
+    Vec3f* frame_buffer_;
+    float* z_buffer_;
 
 private:
-    float* z_buffer_;
     unsigned int surface_size_;
     unsigned int vertex_size_;
     unsigned int normal_size_;

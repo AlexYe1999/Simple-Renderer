@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
         {Vec3f(2, 2, -2),Vec3f(10000.0f, 10000.0f, 0.0f)}
     };
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
-    renderer.LoadSets(lights);
+    renderer.LoadLight(lights);
     Vec3f eye_pos(0.0f, 0.0f, -9.0f);
     float theta_per_second = 2.0f;
     int count = 0;

@@ -7,13 +7,10 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     is_clock_running_(false),
     is_showing_rendering(false),
     is_MSAA_open_(false),
-    start_time_(0.0),
-    end_time_(0.0),
-    duration_(0.0),
-    canvas_width_(width),
-    canvas_height_(height),
+    start_time_(0.0), end_time_(0.0), duration_(0.0),
+    canvas_width_(width), canvas_height_(height),
     background_color_(background_color),
-    canvas_(),
+    frame_buffer_(nullptr),
     model_ptr_(nullptr),
     z_buffer_(nullptr),
     surface_size_(0),
@@ -32,7 +29,8 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     lights_(),
     shader_()
 {
-    z_buffer_ = new float[width* height];
+    frame_buffer_ = new Vec3f[width * height];
+    z_buffer_ = new float[width * height];
 }
 
 Renderer::~Renderer(){
@@ -78,8 +76,8 @@ void Renderer::GetTimeCost(){
 
 void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms){
     StopClock();
-    cv::Mat image;
-    cv::flip(canvas_, image, 0);
+    cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);        
     cv::namedWindow(window_name);
     imshow(window_name, image);
     cv::waitKey(delay_ms);
@@ -87,13 +85,13 @@ void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms)
 }
 
 void Renderer::SaveImage(const std::string& filename){
-    cv::flip(canvas_, canvas_, 0);
-    cv::namedWindow("OutputImage");
-    cv::imshow("OutputImage", canvas_);
     cout<<"\nPush 's to save image or push 'q' to quit\n";
-    int k = cv::waitKey(0);
+    char k = cin.get();
     if(k == 's'){
-        if(imwrite(filename, canvas_*255.0f)){
+        cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+        cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+        cv::imshow("Rendering", image);
+        if(imwrite(filename, image*255.0f)){
             cout<<"Save the image sucessfully\n";
         }
         else{
@@ -105,7 +103,13 @@ void Renderer::SaveImage(const std::string& filename){
     }
 }
 
-bool Renderer::LoadSets(const vector<Light>& lights){
+void Renderer::ClearCanvas(){
+    for(int i = 0;i < canvas_width_ * canvas_height_; i++){
+        frame_buffer_[i] = background_color_;
+    }
+}
+
+bool Renderer::LoadLight(const vector<Light>& lights){
     lights_ = lights;
 }
 
@@ -256,11 +260,13 @@ bool Renderer::RenderPointModel(){
         Vec3f v0 = model_ptr_->getColor(textures_[indexes[0].uv].u, textures_[indexes[0].uv].v);  
         Vec3f v1 = model_ptr_->getColor(textures_[indexes[1].uv].u, textures_[indexes[1].uv].v);
         Vec3f v2 = model_ptr_->getColor(textures_[indexes[2].uv].u, textures_[indexes[2].uv].v);
-        canvas_.at<cv::Scalar>(vertex[0].y, vertex[0].x) = cv::Scalar(v0.z / 255.0f, v0.y / 255.0f, v0.x / 255.0f);
-        canvas_.at<cv::Scalar>(vertex[1].y, vertex[1].x) = cv::Scalar(v1.z / 255.0f, v1.y / 255.0f, v1.x / 255.0f);
-        canvas_.at<cv::Scalar>(vertex[2].y, vertex[2].x) = cv::Scalar(v2.z / 255.0f, v2.y / 255.0f, v2.x / 255.0f);
+        SetPixel(Vec2i(vertex[0].x, vertex[0].y),v0);
+        SetPixel(Vec2i(vertex[1].x, vertex[1].y), v1);
+        SetPixel(Vec2i(vertex[2].x, vertex[2].y), v2);
         if(is_showing_rendering){
-            cv::imshow("Rendering", canvas_);
+            cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+            cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+            cv::imshow("Rendering", image);
             cv::waitKey(1);
         }
     }
@@ -284,7 +290,9 @@ bool Renderer::RenderWireEdge(const Vec3f& color){
         for(int i = 0; i < 3; i++){
             Draw2DLine(Vec2i(vertex[i].x, vertex[i].y), Vec2i(vertex[(i+1)%3].x, vertex[(i+1)%3].y), color);
             if(is_showing_rendering){
-                cv::imshow("Rendering", canvas_);
+                cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+                cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+                cv::imshow("Rendering", image);
                 cv::waitKey(1);
             }
         }
@@ -322,7 +330,9 @@ bool Renderer::RenderNormal(const Vec3f& color){
                 DrawLine(start[i], end[i], (normals[i]*-1.0f+Vec3f(1.0f,1.0f,1.0f))*0.5f);
             }
             if(is_showing_rendering){
-                cv::imshow("Rendering", canvas_);
+                cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+                cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+                cv::imshow("Rendering", image);
                 cv::waitKey(1);
             }
         }
@@ -356,7 +366,9 @@ bool Renderer::RenderModel(const ShaderType& shader_type){
         };
         RenderTriangles(vertex, normals, uv);
         if(is_showing_rendering){
-            cv::imshow("Rendering", canvas_);
+            cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+            cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+            cv::imshow("Rendering", image);
             cv::waitKey(1);
         }
     }
@@ -384,10 +396,10 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const Vec3f& color){
 
     for(int x = p1.x; x < x_end; x += 1){ 
         if(is_reverse){
-            canvas_.at<cv::Scalar>(x, y) = cv::Scalar(color.z, color.y, color.x);            
+            SetPixel(Vec2i(y, x), color);        
         }
         else{
-            canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
+            SetPixel(Vec2i(x, y), color);
         }
         error += derror;
         if(error > dx){
@@ -424,13 +436,13 @@ bool Renderer::DrawLine(Vec3f p1, Vec3f p2, const Vec3f& color){
         if(is_reverse){
             if(z < z_buffer_[x * canvas_width_+ y]){
                 z_buffer_[x * canvas_width_+ y] = z;
-                canvas_.at<cv::Scalar>(x, y) = cv::Scalar(color.z, color.y, color.x);          
+                SetPixel(Vec2i(y, x), color);    
             }            
         }
         else{
             if(z < z_buffer_[y * canvas_width_+ x]){
                 z_buffer_[y * canvas_width_+ x] = z;
-                canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
+                SetPixel(Vec2i(x, y), color);
             }
         }
         error += derror;
@@ -463,7 +475,7 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
                         Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
                         FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal, texture);
                         color = shader_.FragmentShader(payload);
-                        canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);            
+                        SetPixel(Vec2i(x, y), color);
                     }
                 }
             }
@@ -495,7 +507,7 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
                     Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
                     FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal.normalized(), texture);
                     color = shader_.FragmentShader(payload);
-                    canvas_.at<cv::Scalar>(y, x) = cv::Scalar(color.z, color.y, color.x);
+                    SetPixel(Vec2i(x, y), color);
                 }
             }
         }
@@ -561,5 +573,12 @@ bool Renderer::IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel){
     }
     return false;
 }
+
+bool Renderer::SetPixel(const Vec2i& pos, const Vec3f& color){
+    int ind = (canvas_height_-pos.y)*canvas_width_ + pos.x;
+    frame_buffer_[ind] = color;
+    return true;   
+}
+
 
 }

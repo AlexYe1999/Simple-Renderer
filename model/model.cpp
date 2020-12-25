@@ -3,21 +3,14 @@
 namespace YeahooQAQ{
 using namespace std;
 
-Model::Model(const string& filename, const string& texture_name)
+Model::Model(const string& filename)
     :
     surfaces_(), 
     vertices_(),
     normals_(), 
-    textures_(),
-    image_data_(),
-    image_width_(0),
-    image_height_(0){ 
+    textures_(){ 
     ifstream in;
     in.open(filename, ifstream::in);
-    if(in.fail()){
-        cout<<"Initialazation of model is failed\n";
-        return;
-    }
     
     string line;
     char trash;
@@ -43,7 +36,7 @@ Model::Model(const string& filename, const string& texture_name)
             textures_.push_back(vt);
         }
         else if(!line.compare(0, 2, "f ")){
-            vector<Vec3i> surfaces;
+            array<Vec3i, 3> surfaces;
             Vec3i surface;
             iss >> trash;
             for(int i = 0; i < 3; i++){
@@ -51,7 +44,7 @@ Model::Model(const string& filename, const string& texture_name)
                 surface.vertex--;
                 surface.uv--;
                 surface.normal--;
-                surfaces.push_back(surface);
+                surfaces[i] = surface;
             }
             surfaces_.push_back(surfaces);
         }
@@ -63,33 +56,9 @@ Model::Model(const string& filename, const string& texture_name)
     <<" texture: "<< textures_.size() << endl
     <<" surface: "<<surfaces_.size()<<"\n\n";
 
-    if(texture_name != ""){
-        image_data_ = cv::imread(texture_name);
-        if(!image_data_.empty()){
-            image_width_ = image_data_.cols;
-            image_height_ = image_data_.rows;
-            cvtColor(image_data_, image_data_, CV_RGB2BGR); 
-            cout<<"Texture is loaded\n";
-        }
-        else{
-            cout<<"Texture is not loaded\n\n";
-        }
-    }
 }
 
 Model::~Model(){};
-
-const Vec3f Model::getColor(const float& u, const float& v){
-    if(image_data_.empty()){
-        return Vec3f(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
-    }
-    else{
-        int u_img = u * image_width_;
-        int v_img = (1.0f - v) * image_height_;
-        auto color = image_data_.at<cv::Vec3b>(v_img, u_img);
-        return Vec3f(color[0] / 255.0f, color[1] / 255.0f, color[2] / 255.0f);
-    }
-}
 
 
 }

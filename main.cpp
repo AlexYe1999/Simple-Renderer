@@ -1,4 +1,5 @@
 #include"renderer/renderer.h"
+#include"geometry/geometry.h"
 #include<iostream>
 #include<vector>
 using namespace YeahooQAQ;
@@ -14,8 +15,13 @@ int main(int argc, char* argv[]){
         {Vec3f(-2, 2, -2),Vec3f(50000.0f, 50000.0f, 0.0f)}, 
         {Vec3f(2, 2, -2),Vec3f(10000.0f, 10000.0f, 0.0f)}
     };
+    Line line{
+        {Vec3f(10,10,0), Vec3f(990,990,0)},
+        {Vec3f(1.0,1.0,1.0), Vec3f(1.0,1.0,1.0)}
+    };
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
-    renderer.LoadLight(lights);
+    renderer.LoadPointLights(lights);
+    renderer.LoadLine(line);
     Vec3f eye_pos(0.0f, 0.0f, -9.0f);
     float theta_per_second = 2.0f;
     int count = 0;
@@ -44,10 +50,11 @@ int main(int argc, char* argv[]){
 
         renderer.MvpTransforme();
 
-        renderer.RenderModel(ShaderType::TEXTURE_SHADING);
+        renderer.RenderModel(true);
+        renderer.Rendering(ShaderType::TEXTURE_SHADING);
 
         renderer.GetTimeCost();
-        renderer.ShowImage("Rendering",20);
+        renderer.ShowImage("Rendering", 20);
         renderer.ClearTimeCounter();
         count++;
     }

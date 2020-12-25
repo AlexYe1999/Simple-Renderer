@@ -1,6 +1,6 @@
 #ifndef SHADER_H_
 #define SHADER_H_
-#include"../model/geometry.h"
+#include"../geometry/geometry.h"
 #include<vector>
 namespace YeahooQAQ{
 using namespace std;

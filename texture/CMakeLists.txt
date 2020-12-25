@@ -5,5 +5,5 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
 )
 
-add_library (Renderer ${DIR_LIB_SRCS})
-target_link_libraries(Renderer ${OpenCV_LIBS})
+add_library (Texture ${DIR_LIB_SRCS})
+target_link_libraries(Texture ${OpenCV_LIBS})

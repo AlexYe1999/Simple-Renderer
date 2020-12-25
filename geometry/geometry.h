@@ -18,8 +18,8 @@ struct Vec4{
         struct {T x, y, z, w;};
         struct {T vertex, uv, normal, none;};
     };
-    Vec4() : x(0), y(0), z(0),w(0){}
-    Vec4(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w){}
+    Vec4() : x(0), y(0), z(0), w(0){}
+    Vec4(T _x, T _y, T _z, T _w = 0) : x(_x), y(_y), z(_z), w(_w){}
     inline Vec4<T> operator +(const Vec4<T>& vec) const { return Vec4<T>(x + vec.x, y + vec.y, z + vec.z, w + vec.w); }
     inline Vec4<T> operator -(const Vec4<T>& vec) const {return Vec4<T>(x - vec.x, y - vec.y, z - vec.z, w - vec.w); }
     inline Vec4<T> operator *(const T& n) const {return Vec4<T>(n * x, n * y, n * z, n * w); };
@@ -38,7 +38,7 @@ struct Vec3{
         struct {T vertex, uv, normal;};
     };
     Vec3() : x(0), y(0), z(0){}
-    Vec3(T _x, T _y, T _z) : x(_x), y(_y), z(_z){}
+    Vec3(T _x , T _y, T _z = 0) : x(_x), y(_y), z(_z){}
     inline Vec3<T> operator +(const Vec3<T>& vec) const { return Vec3<T>(x + vec.x, y + vec.y, z + vec.z);}
     inline Vec3<T> operator -(const Vec3<T>& vec) const {return Vec3<T>(x - vec.x, y - vec.y, z - vec.z);}
     inline Vec3<T> operator *(const T& n) const {return Vec3<T>(n * x, n * y, n * z);};
@@ -115,11 +115,11 @@ struct Matrix4{
     Matrix4(Vec4<T> vec1, Vec4<T> vec2, Vec4<T> vec3, Vec4<T> vec4) : vec{vec1, vec2, vec3, vec4}{};
     inline Matrix4<T> operator +(const Matrix4<T>& m4) const{return Matrix4<T>(vec[0] + m4.vec[0], vec[1] + m4.vec[1], vec[2] + m4.vec[2], vec[3] + m4.vec[3]);}
     inline Matrix4<T> operator -(const Matrix4<T>& m4) const{return Matrix4<T>(vec[0] - m4.vec[0], vec[1] - m4.vec[1], vec[2] - m4.vec[2], vec[3] - m4.vec[3]);}
-    inline Matrix4<T> operator *(const T& n) const{return Matrix4<T>(vec[0] * n, vec[1] * n, vec[2] * n,  vec[3] * n);}
     inline Matrix4<T>& operator /=(const T& n) {return *this;}
     inline Vec4<T>& operator [](const int& index) {return vec[index];}
     inline Matrix3<T> toMatrix3() const {return Matrix3<T>(vec[0].toVec3(), vec[1].toVec3(), vec[2].toVec3());};
     template<typename> friend ostream& operator <<(ostream& os, const Matrix4<T>& m4);
+    inline Matrix4<T> operator *(const T& n) const{return Matrix4<T>(vec[0] * n, vec[1] * n, vec[2] * n,  vec[3] * n);}
     inline Vec4<T> operator *(const Vec4<T>& vec4){
         return Vec4<T>{
             vec[0].x * vec4.x + vec[1].x * vec4.y + vec[2].x * vec4.z + vec[3].x * vec4.w,
@@ -164,10 +164,10 @@ struct Matrix3{
     Matrix3(const Vec3<T>& vec1, const Vec3<T>& vec2, const Vec3<T>& vec3) : vec{vec1, vec2, vec3}{};
     inline Matrix3<T> operator +(const Matrix3<T>& m3) const{return Matrix3<T>(vec[0] + m3.vec[0], vec[1] + m3.vec[1], vec[2] + m3.vec[2]);}
     inline Matrix3<T> operator -(const Matrix3<T>& m3) const{return Matrix3<T>(vec[0] - m3.vec[0], vec[1] - m3.vec[1], vec[2] - m3.vec[2]);}
-    inline Matrix3<T> operator *(const T& n) const{return Matrix3<T>(vec[0] * n, vec[1] * n, vec[2] * n);}
     inline Vec3<T>& operator [](const int& index) {return vec[index];}
     inline Matrix4<T> toMatrix4() const {return Matrix4<T>(vec[0].toVec4(), vec[1].toVec4(), vec[2].toVec4(), Vec4f{0, 0, 0, 1});};
     template<typename> friend ostream& operator <<(ostream& os, const Matrix3<T>& m3);
+    inline Matrix3<T> operator *(const T& n) const{return Matrix3<T>(vec[0] * n, vec[1] * n, vec[2] * n);}
     inline Vec3<T> operator*(const Vec3<T>& vec3){
         return Vec3<T>{
             vec[0].x * vec3.x + vec[1].x * vec3.y + vec[2].x * vec3.z,
@@ -231,9 +231,9 @@ struct Matrix2{
     Matrix2(const Vec2<T>& vec1, const Vec2<T>& vec2) : vec{vec1, vec2}{}
     inline Matrix2<T> operator +(const Matrix2<T>& m2) const{return Matrix2<T>(vec[0] + m2.vec[0], vec[1] + m2.vec[1]);}
     inline Matrix2<T> operator -(const Matrix2<T>& m2) const{return Matrix2<T>(vec[0] - m2.vec[0], vec[1] - m2.vec[1]);}
-    inline Matrix2<T> operator *(const T& n) const{return Matrix2<T>(vec[0] * n, vec[1]* n);}
     inline Vec2<T>& operator [](const int& index) {return vec[index];}
     template<typename> friend ostream& operator <<(ostream& os, const Matrix2<T>& m2);
+    inline Matrix2<T> operator *(const T& n) const{return Matrix2<T>(vec[0] * n, vec[1]* n);}
     inline Matrix2<T> operator *(const Matrix2<T>& m2) const{
         Vec2<T> vec2 = {
             vec[0].x * m2.vec[0].x + vec[1].x * m2.vec[0].y,

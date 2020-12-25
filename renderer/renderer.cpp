@@ -11,22 +11,21 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     canvas_width_(width), canvas_height_(height),
     background_color_(background_color),
     frame_buffer_(nullptr),
-    model_ptr_(nullptr),
     z_buffer_(nullptr),
-    surface_size_(0),
-    vertex_size_(0),
-    normal_size_(0),
-    texture_size_(0),
-    surfaces_(), 
-    vertices_(),
-    normals_(), 
-    textures_(),
+    points_(),
+    lines_(),
+    triangles_(),
+    is_render_verties_(false),
+    is_render_edges_(false),
+    is_render_normals_(false),
+    is_render_models_(false),
     z_near_(0.0f),
     z_far_(0.0f),
     model_matrix_(),
     view_matrix_(),
     projection_matrix_(),
-    lights_(),
+    point_lights_(),
+    textures_ptrs_(),
     shader_()
 {
     frame_buffer_ = new Vec3f[width * height];
@@ -34,13 +33,19 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
 }
 
 Renderer::~Renderer(){
-    if(model_ptr_ != nullptr){
-        delete model_ptr_;
-        model_ptr_ = nullptr;
+    if(frame_buffer_ != nullptr){
+        delete[] frame_buffer_;
+        frame_buffer_ = nullptr;
     }
-    if(z_buffer_ = nullptr){
+    if(z_buffer_ != nullptr){
         delete[] z_buffer_;
         z_buffer_ = nullptr;
+    }
+    unsigned int texture_num = textures_ptrs_.size();
+    for(int i = 0; i < texture_num; i++){
+        if(textures_ptrs_[i] != nullptr){
+            delete textures_ptrs_[i];
+        }
     }
 };
 
@@ -109,40 +114,157 @@ void Renderer::ClearCanvas(){
     }
 }
 
-bool Renderer::LoadLight(const vector<Light>& lights){
-    lights_ = lights;
-}
+bool Renderer::Rendering(const ShaderType& shader_type){
+    cout<<"Rendering model ...\n";
+    shader_.Setting(shader_type);
 
-bool Renderer::LoadModel(const string& filename, const string& texture_name){
-    if(model_ptr_ == nullptr){
-        model_ptr_ = new Model(filename, texture_name);
-    }
-    else{
-        cerr <<"Model has been loaded\n";
-        return false;
+    unsigned int lines_num = lines_.size();
+    for(unsigned int index = 0; index < lines_num;index++){
+        Line line = lines_[index];
+        DrawLine(line.vertices[0], line.vertices[1], (line.colors[0]+line.colors[1]) * 0.5f);
     }
 
-    surface_size_ = model_ptr_->GetSurfeceSize();
-    vertex_size_ = model_ptr_->GetVertexSize();
-    normal_size_ = model_ptr_->GetNormalSize();
-    texture_size_ = model_ptr_->GetTextureSize();
+    unsigned int triangles_num = triangles_.size();    
+    for(unsigned int index = 0; index < triangles_num; index++){
+        Triangle& triangle = triangles_[index];
+        Vec3f vertex[3]{
+            triangle.vertices_camera[0],
+            triangle.vertices_camera[1],
+            triangle.vertices_camera[2]
+        };
+        Vec3f normals[3]{
+            triangle.normals_camera[0],
+            triangle.normals_camera[1],
+            triangle.normals_camera[2]
+        };
+        Vec2f uv[3]{
+            triangle.texture_coords[0],
+            triangle.texture_coords[1],
+            triangle.texture_coords[2]
+        };
+        if(is_render_models_){
+            RenderTriangles(vertex, normals, uv, triangle.texture_ptr);            
+        }
+        if(is_render_verties_){
+            Vec3f v0(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
+            Vec3f v1(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
+            Vec3f v2(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
+            if(triangle.texture_ptr != nullptr){
+                v0 = triangle.texture_ptr->getColor(triangle.texture_coords[0].u, triangle.texture_coords[0].v);  
+                v1 = triangle.texture_ptr->getColor(triangle.texture_coords[1].u, triangle.texture_coords[1].v);
+                v2 = triangle.texture_ptr->getColor(triangle.texture_coords[2].u, triangle.texture_coords[2].v);
+            }
 
-    for(unsigned int index = 0; index < surface_size_; index++){
-        surfaces_.push_back(model_ptr_->GetSurfece(index));
+            SetPixel(Vec2i(vertex[0].x, vertex[0].y), v0);
+            SetPixel(Vec2i(vertex[1].x, vertex[1].y), v1);
+            SetPixel(Vec2i(vertex[2].x, vertex[2].y), v2);
+        }
+        if(is_render_edges_){
+            for(int i = 0; i < 3; i++){
+                Vec3f v0(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
+                Vec3f v1(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
+                if(triangle.texture_ptr != nullptr){
+                    v0 = triangle.texture_ptr->getColor(triangle.texture_coords[0].u, triangle.texture_coords[0].v);  
+                    v1 = triangle.texture_ptr->getColor(triangle.texture_coords[1].u, triangle.texture_coords[1].v);
+                }
+                Draw2DLine(Vec2i(vertex[i].x, vertex[i].y), Vec2i(vertex[(i+1)%3].x, vertex[(i+1)%3].y), (v0+v1)*0.5f);
+                if(is_showing_rendering){
+                    cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+                    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+                    cv::imshow("Rendering", image);
+                    cv::waitKey(1);
+                }
+            }
+        }
+        if(is_render_normals_){
+            Vec3f end[3]{
+                vertex[0] + normals[0]*canvas_width_ * 0.01f,
+                vertex[1] + normals[1]*canvas_height_ * 0.01f,
+                vertex[2] + normals[2]*z_far_ * 0.01f
+            };
+            for(int i = 0; i < 3; i++){
+                if(vertex[i].z - 0.01f < z_buffer_[static_cast<int>(vertex[i].y) * canvas_width_+ static_cast<int>(vertex[i].x)]){
+                    DrawLine(vertex[i], end[i], (normals[i]*-1.0f+Vec3f(1.0f,1.0f,1.0f))*0.5f);
+                }
+                if(is_showing_rendering){
+                    cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+                    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+                    cv::imshow("Rendering", image);
+                    cv::waitKey(1);
+                }
+            }
+        }
+        if(is_showing_rendering){
+            cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+            cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+            cv::imshow("Rendering", image);
+            cv::waitKey(1);
+        }
     }
-    for(unsigned int index = 0; index < texture_size_; index++){
-        textures_.push_back(model_ptr_->GetTexture(index));
-    }
-    vertices_.resize(vertex_size_);
-    normals_.resize(normal_size_);
+
+
     return true;
 }
 
-bool Renderer::MvpTransforme(){
-    if(model_ptr_ == nullptr){
-        cerr << "Model heven't been loaded\n";
-        return false;
+bool Renderer::LoadModel(const string& filename, const string& texture_name = ""){
+
+    Model* model_ptr = new Model(filename);
+    Texture* texture_ptr = new Texture(texture_name);
+    if(texture_ptr->IsValid()){
+        textures_ptrs_.push_back(texture_ptr);
     }
+    else{
+        delete texture_ptr;
+        texture_ptr = nullptr;
+    }
+
+    int surface_size = model_ptr->GetSurfeceSize();
+    Triangle triangle(texture_ptr);
+    for(unsigned int index = 0; index < surface_size; index++){
+        array<Vec3i, 3> indexes = model_ptr->GetSurfece(index);//v uv nor
+        for(int i = 0; i < 3; i++){
+            triangle.vertices_world[i] = model_ptr->GetVertex(indexes[i].vertex);
+            triangle.normals_world[i] = model_ptr->GetNormal(indexes[i].normal);            
+            triangle.texture_coords[i] = model_ptr->GetTexture(indexes[i].uv);
+        }
+        triangles_.push_back(triangle);
+    }
+
+    if(model_ptr != nullptr){
+        delete model_ptr;
+        model_ptr = nullptr;
+    }
+    return true;
+}
+
+bool Renderer::LoadPoint(const Point& point){
+    points_.push_back(point);
+    return true;
+}
+bool Renderer::LoadPoint(const vector<Point>& points){
+    for(Point point : points){
+        points_.push_back(point);
+    }
+    return true;
+}
+bool Renderer::LoadLine(const Line& line){
+    lines_.push_back(line);
+    return true;
+}
+bool Renderer::LoadLine(const vector<Line>& lines){
+    for(Line line : lines){
+        lines_.push_back(line);
+    }
+    return true;
+}
+
+bool Renderer::LoadPointLights(const vector<Light>& lights){
+    for(Light light : lights){
+        point_lights_.push_back(light);
+    }
+}
+
+bool Renderer::MvpTransforme(){
 
     unsigned int z_buffer_size = canvas_width_ * canvas_height_;
     for(int i = 0; i <  z_buffer_size; i++){
@@ -153,7 +275,7 @@ bool Renderer::MvpTransforme(){
     float f2 = (z_far_ + z_near_) * 0.5f;
     Matrix4f mvp_matrix = projection_matrix_ * view_matrix_ * model_matrix_;
     
-    vector<Light> lights = lights_;
+    vector<Light> lights = point_lights_;
     for(Light& light : lights){
         Vec4f v4 = mvp_matrix * light.position.toVec4(1.0f);
         v4 /= v4.w;
@@ -164,27 +286,28 @@ bool Renderer::MvpTransforme(){
         };
         light.position = v3;
     }
-    //shader_.LoadProperties(lights, Vec3f(canvas_width_*0.5f, canvas_height_*0.5f, 0.0f));
+
     shader_.LoadProperties(lights, Vec3f(canvas_width_*0.5f, canvas_height_*0.5f, 0.0f));
     
-    for(unsigned int index = 0; index < vertex_size_; index++){
-        Vec4f v4 = mvp_matrix * model_ptr_->GetVertex(index).toVec4(1.0f);
-        v4 /= v4.w;
-        Vec3f v3 = {
-            0.5f * canvas_width_ * (v4.x + 1.0f),
-            0.5f * canvas_height_ * (v4.y + 1.0f),
-            v4.z * f1 + f2
-        };
-        vertices_[index] = v3;
-    }
-
-    for(unsigned int index = 0; index < normal_size_; index++){
-        Vec3f vec = model_ptr_->GetNormal(index) * mvp_matrix.toMatrix3().inversed();
-        normals_[index] = vec.normalized();
+    unsigned int triangle_num = triangles_.size();
+    for(unsigned int index = 0; index < triangle_num; index++){
+        for(int i = 0; i < 3; i++){
+            Vec4f v4 = mvp_matrix * triangles_[index].vertices_world[i].toVec4(1.0f);
+            v4 /= v4.w;
+            Vec3f v3 = {
+                0.5f * canvas_width_ * (v4.x + 1.0f),
+                0.5f * canvas_height_ * (v4.y + 1.0f),
+                v4.z * f1 + f2
+            };
+            triangles_[index].vertices_camera[i] = v3;
+            triangles_[index].normals_camera[i] = triangles_[index].normals_world[i] * mvp_matrix.toMatrix3().inversed();
+        }
     }
 
     return true;
 }
+
+
 
 void Renderer::SetModelMatrix(const float& x_axis, const float& y_axis, const float& z_axis){
     float theta_x = x_axis * 3.1415926535898f / 180.0f;
@@ -243,138 +366,11 @@ void Renderer::SetProjectionMatrix(const float& eye_fov, const float& aspect_rat
     projection_matrix_ = otho2 * otho1 * perspective;
 }
 
-bool Renderer::RenderPointModel(){
-    if(model_ptr_ == nullptr){
-        cerr << "Model heven't been loaded\n";
-        return false;
-    }
-    cout<<"rendering point ...\n";
-
-    for(int index = 0; index < surface_size_; index++){
-        vector<Vec3i> indexes = surfaces_[index];
-        Vec3f vertex[3]{
-            vertices_[indexes[0].vertex],
-            vertices_[indexes[1].vertex],
-            vertices_[indexes[2].vertex]
-        };
-        Vec3f v0 = model_ptr_->getColor(textures_[indexes[0].uv].u, textures_[indexes[0].uv].v);  
-        Vec3f v1 = model_ptr_->getColor(textures_[indexes[1].uv].u, textures_[indexes[1].uv].v);
-        Vec3f v2 = model_ptr_->getColor(textures_[indexes[2].uv].u, textures_[indexes[2].uv].v);
-        SetPixel(Vec2i(vertex[0].x, vertex[0].y),v0);
-        SetPixel(Vec2i(vertex[1].x, vertex[1].y), v1);
-        SetPixel(Vec2i(vertex[2].x, vertex[2].y), v2);
-        if(is_showing_rendering){
-            cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
-            cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
-            cv::imshow("Rendering", image);
-            cv::waitKey(1);
-        }
-    }
-
+bool Renderer::SetPixel(const Vec2i& pos, const Vec3f& color){
+    int ind = (canvas_height_-pos.y)*canvas_width_ + pos.x;
+    frame_buffer_[ind] = color;
+    return true;   
 }
-
-bool Renderer::RenderWireEdge(const Vec3f& color){
-    if(model_ptr_ == nullptr){
-        cerr << "Model heven't been loaded\n";
-        return false;
-    }
-    cout<<"Rendering edge ...\n";
-
-    for(int index = 0; index < surface_size_; index++){
-        vector<Vec3i>& surface = surfaces_[index];
-        Vec3f vertex[3]{
-            vertices_[surfaces_[index][0].vertex],
-            vertices_[surfaces_[index][1].vertex],
-            vertices_[surfaces_[index][2].vertex]
-        };
-        for(int i = 0; i < 3; i++){
-            Draw2DLine(Vec2i(vertex[i].x, vertex[i].y), Vec2i(vertex[(i+1)%3].x, vertex[(i+1)%3].y), color);
-            if(is_showing_rendering){
-                cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
-                cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
-                cv::imshow("Rendering", image);
-                cv::waitKey(1);
-            }
-        }
-    }
-
-    return true;
-}
-
-bool Renderer::RenderNormal(const Vec3f& color){
-    if(model_ptr_ == nullptr){
-        cerr << "Model heven't been loaded\n";
-        return false;
-    }
-    cout<<"Rendering normal ...\n";
-
-    for(int index = 0; index < surface_size_; index++){
-        vector<Vec3i>& surface = surfaces_[index];
-        Vec3f start[3]{
-            vertices_[surfaces_[index][0].vertex],
-            vertices_[surfaces_[index][1].vertex],
-            vertices_[surfaces_[index][2].vertex]
-        };
-        Vec3f normals[3]{
-            normals_[surfaces_[index][0].normal],
-            normals_[surfaces_[index][1].normal],
-            normals_[surfaces_[index][2].normal]
-        };
-        Vec3f end[3]{
-            start[0] + normals[0]*canvas_width_ * 0.01f,
-            start[1] + normals[1]*canvas_height_ * 0.01f,
-            start[2] + normals[2]*z_far_ * 0.01f
-        };
-        for(int i = 0; i < 3; i++){
-            if(start[i].z - 0.01f < z_buffer_[static_cast<int>(start[i].y) * canvas_width_+ static_cast<int>(start[i].x)]){
-                DrawLine(start[i], end[i], (normals[i]*-1.0f+Vec3f(1.0f,1.0f,1.0f))*0.5f);
-            }
-            if(is_showing_rendering){
-                cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
-                cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
-                cv::imshow("Rendering", image);
-                cv::waitKey(1);
-            }
-        }
-    }
-
-}
-
-bool Renderer::RenderModel(const ShaderType& shader_type){
-    if(model_ptr_ == nullptr){
-        cerr << "Model heven't been loaded\n";
-        return false;
-    }
-    cout<<"Rendering model ...\n";
-    shader_.Setting(shader_type);
-    for(int index = 0; index < surface_size_; index++){
-        vector<Vec3i>& indexes = surfaces_[index];
-        Vec3f vertex[3]{
-            vertices_[indexes[0].vertex],
-            vertices_[indexes[1].vertex],
-            vertices_[indexes[2].vertex]
-        };
-        Vec3f normals[3]{
-            normals_[indexes[0].normal],
-            normals_[indexes[1].normal],
-            normals_[indexes[2].normal]
-        };
-        Vec2f uv[3]{
-            textures_[indexes[0].uv],         
-            textures_[indexes[1].uv],    
-            textures_[indexes[2].uv]
-        };
-        RenderTriangles(vertex, normals, uv);
-        if(is_showing_rendering){
-            cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
-            cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
-            cv::imshow("Rendering", image);
-            cv::waitKey(1);
-        }
-    }
-    return true;
-}
-
 bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const Vec3f& color){
     bool is_reverse = false;
     if(abs(p1.x - p2.x) < abs(p1.y - p2.y)){
@@ -455,8 +451,7 @@ bool Renderer::DrawLine(Vec3f p1, Vec3f p2, const Vec3f& color){
 
     return true;
 }
-
-bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
+bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv, Texture* texture_ptr){
     Vec2f bbox[2];
     FindBoundingBox(vertex, bbox);
     int max_x = static_cast<int>(bbox[1].x)+1;
@@ -472,7 +467,7 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
                         Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
                         Vec3f color(1.0f, 1.0f, 1.0f);
                         Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
-                        Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
+                        Vec3f texture = texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y);
                         FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal, texture);
                         color = shader_.FragmentShader(payload);
                         SetPixel(Vec2i(x, y), color);
@@ -504,7 +499,7 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
                     Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
                     Vec3f color(1.0f, 1.0f, 1.0f);
                     Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
-                    Vec3f texture = model_ptr_->getColor(uv_interpolated.x, uv_interpolated.y);
+                    Vec3f texture = texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y);
                     FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal.normalized(), texture);
                     color = shader_.FragmentShader(payload);
                     SetPixel(Vec2i(x, y), color);
@@ -512,7 +507,6 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv){
             }
         }
     }
-
     return true;
 }
 
@@ -574,11 +568,6 @@ bool Renderer::IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel){
     return false;
 }
 
-bool Renderer::SetPixel(const Vec2i& pos, const Vec3f& color){
-    int ind = (canvas_height_-pos.y)*canvas_width_ + pos.x;
-    frame_buffer_[ind] = color;
-    return true;   
-}
 
 
 }

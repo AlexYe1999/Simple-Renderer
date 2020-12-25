@@ -2,6 +2,8 @@
 #define RENDERER_H_
 #include"../model/model.h"
 #include"../shader/shader.h"
+#include"../geometry/shape.h"
+#include"../texture/texture.h"
 #include<string>
 #include<opencv2/opencv.hpp>
 
@@ -22,13 +24,26 @@ public:
 public:
     void ShowImage(string window_name, const unsigned short delay_ms);
     void SaveImage(const std::string& filename);
-    void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
-    void MSAA(const bool& is_open){is_MSAA_open_ = is_open;}
     void ClearCanvas();
 
 public:
+    bool Rendering(const ShaderType& shader_type);
+
+public:
+    void MSAA(const bool& is_open){is_MSAA_open_ = is_open;}
+    void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
+    bool RenderModelVerties(const bool& is_render_verties){is_render_verties_ = is_render_verties;}
+    bool RenderModelEdges(const bool& is_render_edges){ is_render_edges_ = is_render_edges;}
+    bool RenderModelNormals(const bool& is_render_normals){is_render_normals_ = is_render_normals;}
+    bool RenderModel(const bool& is_render_models){is_render_models_ = is_render_models;}
+
+public:
     bool LoadModel(const string& filename, const string& texture_name);
-    bool LoadLight(const vector<Light>& lights);
+    bool LoadPoint(const Point& point);
+    bool LoadPoint(const vector<Point>& points);
+    bool LoadLine(const Line& line);
+    bool LoadLine(const vector<Line>& lines);
+    bool LoadPointLights(const vector<Light>& lights);
 
 public:
     bool MvpTransforme();
@@ -39,23 +54,15 @@ public:
                                                         const float& zNear, const float& zFar);
 
 public:
-    bool RenderPointModel();
-    bool RenderWireEdge(const Vec3f& color);
-    bool RenderNormal(const Vec3f& color);
-    bool RenderModel(const ShaderType& shader_type);
-
-public:
-    bool DrawLine(Vec3f p1, Vec3f p2, const  Vec3f& color);
+    bool SetPixel(const Vec2i& pos, const Vec3f& color);
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  Vec3f& color);
-    bool RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv);
+    bool DrawLine(Vec3f p1, Vec3f p2, const  Vec3f& color);
+    bool RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv, Texture* texture_ptr);
 
 private:
+    Vec3f BarycentricInterpolation(const Vec3f vertex[3], const Vec2f& pixel);
     void FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]);
     bool IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel);
-    Vec3f BarycentricInterpolation(const Vec3f vertex[3], const Vec2f& pixel);
-
-private:
-    bool SetPixel(const Vec2i& pos, const Vec3f& color);
 
 private:
     const  double time_per_tick_;
@@ -74,16 +81,10 @@ private:
     float* z_buffer_;
 
 private:
-    unsigned int surface_size_;
-    unsigned int vertex_size_;
-    unsigned int normal_size_;
-    unsigned int texture_size_;
-    Model* model_ptr_;
-    vector<vector<Vec3i>> surfaces_;
-    vector<Vec3f> vertices_;
-    vector<Vec3f> normals_;
-    vector<Vec2f> textures_;
-
+    bool is_render_verties_;
+    bool is_render_edges_;
+    bool is_render_normals_;
+    bool is_render_models_;
 private:
     float z_near_;
     float z_far_;
@@ -92,7 +93,11 @@ private:
     Matrix4f projection_matrix_;
 
 private:
-    vector<Light> lights_;
+    vector<Point> points_;
+    vector<Line> lines_;
+    vector<Triangle> triangles_;
+    vector<Light> point_lights_;
+    vector<Texture*> textures_ptrs_;
     Shader shader_;
 
 };

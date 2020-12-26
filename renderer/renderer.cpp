@@ -26,10 +26,11 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     projection_matrix_(),
     point_lights_(),
     textures_ptrs_(),
-    shader_()
+    shader_ptr_(nullptr)
 {
     frame_buffer_ = new Vec3f[width * height];
     z_buffer_ = new float[width * height];
+    shader_ptr_ = new IShader;
 }
 
 Renderer::~Renderer(){
@@ -47,7 +48,11 @@ Renderer::~Renderer(){
             delete textures_ptrs_[i];
         }
     }
-};
+    if(shader_ptr_ != nullptr){
+        delete shader_ptr_;
+        shader_ptr_ = nullptr;
+    }
+}
 
 void Renderer::StartClock(){
     if(!is_clock_running_){
@@ -114,10 +119,9 @@ void Renderer::ClearCanvas(){
     }
 }
 
-bool Renderer::Rendering(const ShaderType& shader_type){
+bool Renderer::Rendering(){
     cout<<"Rendering model ...\n";
-    shader_.Setting(shader_type);
-
+    
     unsigned int lines_num = lines_.size();
     for(unsigned int index = 0; index < lines_num;index++){
         Line line = lines_[index];
@@ -206,6 +210,16 @@ bool Renderer::Rendering(const ShaderType& shader_type){
     return true;
 }
 
+bool Renderer::SetShader(IShader*& shader){
+    if(shader_ptr_ != nullptr){
+        delete shader_ptr_;
+        shader_ptr_ = shader;
+    }
+    else{
+        shader_ptr_ = shader;
+    }
+}
+
 bool Renderer::LoadModel(const string& filename, const string& texture_name = ""){
 
     Model* model_ptr = new Model(filename);
@@ -287,7 +301,7 @@ bool Renderer::MvpTransforme(){
         light.position = v3;
     }
 
-    shader_.LoadProperties(lights, Vec3f(canvas_width_*0.5f, canvas_height_*0.5f, 0.0f));
+    shader_ptr_->LoadProperties(lights, Vec3f(canvas_width_*0.5f, canvas_height_*0.5f, 0.0f));
     
     unsigned int triangle_num = triangles_.size();
     for(unsigned int index = 0; index < triangle_num; index++){
@@ -469,7 +483,7 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv, Texture
                         Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
                         Vec3f texture = texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y);
                         FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal, texture);
-                        color = shader_.FragmentShader(payload);
+                        color = shader_ptr_->FragmentShader(payload);
                         SetPixel(Vec2i(x, y), color);
                     }
                 }
@@ -501,7 +515,7 @@ bool Renderer::RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv, Texture
                     Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
                     Vec3f texture = texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y);
                     FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal.normalized(), texture);
-                    color = shader_.FragmentShader(payload);
+                    color = shader_ptr_->FragmentShader(payload);
                     SetPixel(Vec2i(x, y), color);
                 }
             }

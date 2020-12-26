@@ -5,15 +5,6 @@
 namespace YeahooQAQ{
 using namespace std;
 
-enum class ShaderType{
-    DEFAULT,
-    NORMAL_SHADING,
-    PHONG_SHADING,
-    TEXTURE_SHADING,
-    BUMPSHADING,
-    DISPLACEMENT_SHADING
-};
-
 struct Light{
     Vec3f position;
     Vec3f intensity;
@@ -29,31 +20,62 @@ struct FragmentShaderPayload{
     FragmentShaderPayload(const Vec3f& _position, const Vec3f& _color, const Vec3f& _normal, const Vec3f& _texture)
         :   position(_position), color(_color), normal(_normal), texture(_texture){}
 };
-
-class Shader{
+    
+class IShader{
 public:
-    Shader();
-    ~Shader();
+    IShader();
+    virtual ~IShader();
+
+public:
+    virtual bool LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos);
+
+public:
+    virtual void VertexShader();
+    virtual Vec3f FragmentShader(const FragmentShaderPayload& payload);
+};
+
+class NormalShader : public IShader{
+public:
+    NormalShader();
+    ~NormalShader();
 
 public:
     void VertexShader();
+    Vec3f FragmentShader(const FragmentShaderPayload& payload);
+
+};
+
+
+class PhongShader : public IShader{
+public:  
+    PhongShader();
+    ~PhongShader();
+
 public:
     bool LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos);
-    bool Setting(const ShaderType& shader_type){shader_type_ = shader_type;};
+public:
+    void VertexShader();
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
-private:
-    Vec3f NormalFragmentShader(const FragmentShaderPayload& payload);
-    Vec3f PhongFragmentShader(const FragmentShaderPayload& payload);
-    Vec3f TextureFragmentShader(const FragmentShaderPayload& payload);
-    Vec3f BumpFragmentShader(const FragmentShaderPayload& payload);
-    Vec3f DisplacementFragmentShader(const FragmentShaderPayload& payload);
 
 private:
-    ShaderType shader_type_;
     Vec3f eye_pos_;
     vector<Light> lights_;
 };
-    
+
+class TextureShader : public IShader{
+public:
+    TextureShader();
+    ~TextureShader();
+public:
+    bool LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos);
+public:
+    void VertexShader();
+    Vec3f FragmentShader(const FragmentShaderPayload& payload);
+
+private:
+    Vec3f eye_pos_;
+    vector<Light> lights_;
+};
 
 }
 #endif

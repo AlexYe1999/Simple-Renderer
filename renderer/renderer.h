@@ -27,7 +27,7 @@ public:
     void ClearCanvas();
 
 public:
-    bool Rendering(const ShaderType& shader_type);
+    bool Rendering();
 
 public:
     void MSAA(const bool& is_open){is_MSAA_open_ = is_open;}
@@ -36,6 +36,9 @@ public:
     bool RenderModelEdges(const bool& is_render_edges){ is_render_edges_ = is_render_edges;}
     bool RenderModelNormals(const bool& is_render_normals){is_render_normals_ = is_render_normals;}
     bool RenderModel(const bool& is_render_models){is_render_models_ = is_render_models;}
+
+public:
+    bool SetShader(IShader*& shader);
 
 public:
     bool LoadModel(const string& filename, const string& texture_name);
@@ -98,8 +101,7 @@ private:
     vector<Triangle> triangles_;
     vector<Light> point_lights_;
     vector<Texture*> textures_ptrs_;
-    Shader shader_;
-
+    IShader* shader_ptr_;
 };
 
 }

@@ -2,55 +2,34 @@
 
 namespace YeahooQAQ{
     
-Shader::Shader()
-    :
-    shader_type_(ShaderType::DEFAULT),
-    eye_pos_(0.0f, 0.0f, 0.0f),
-    lights_{}
-{}
-
-Shader::~Shader(){}
-
-bool Shader::LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos){        
-    lights_ = lights;
-    eye_pos_ = eye_pos;
+IShader::IShader(){}
+IShader::~IShader(){}
+bool IShader::LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos){}
+void IShader::VertexShader(){}
+Vec3f IShader::FragmentShader(const FragmentShaderPayload& payload){
+    return payload.position;
 }
 
-Vec3f Shader::FragmentShader(const FragmentShaderPayload& payload){
-    Vec3f color;
-    switch (shader_type_){
-        case ShaderType::NORMAL_SHADING:{
-            color = NormalFragmentShader(payload);
-            break;
-        }
-        case ShaderType::PHONG_SHADING:{
-            color = PhongFragmentShader(payload);
-            break;
-        }
-        case ShaderType::TEXTURE_SHADING:{
-            color = TextureFragmentShader(payload);
-            break;
-        }
-        case ShaderType::BUMPSHADING:{
-            color = NormalFragmentShader(payload);
-            break;
-        }
-        case ShaderType::DISPLACEMENT_SHADING:{
-            color = NormalFragmentShader(payload);
-            break;
-        }
-        default:{
-            color = Vec3f(0.1f, 0.1f, 0.1f);
-        }
-    }
-    return color;
-}
-
-Vec3f Shader::NormalFragmentShader(const FragmentShaderPayload& payload){
+NormalShader::NormalShader() : IShader(){}
+NormalShader::~NormalShader(){}
+void NormalShader::VertexShader(){}
+Vec3f NormalShader::FragmentShader(const FragmentShaderPayload& payload){
     return (payload.normal+Vec3f(1.0f,1.0f,1.0f))*0.5f;
 }
 
-Vec3f Shader::PhongFragmentShader(const FragmentShaderPayload& payload){
+PhongShader::PhongShader() 
+    :
+    IShader(),
+    eye_pos_(0.0f, 0.0f, 0.0f),
+    lights_()
+{}
+PhongShader::~PhongShader(){}
+bool PhongShader::LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos){
+    lights_ = lights;
+    eye_pos_ = eye_pos;
+}
+void PhongShader::VertexShader(){}
+Vec3f PhongShader::FragmentShader(const FragmentShaderPayload& payload){
     Vec3f Ka(0.0000007f, 0.000007f, 0.0000007f);
     Vec3f Kd = payload.color;
     Vec3f Ks(0.7f, 0.7f, 0.7f);
@@ -71,7 +50,20 @@ Vec3f Shader::PhongFragmentShader(const FragmentShaderPayload& payload){
     }
     return dst_color;
 }
-Vec3f Shader::TextureFragmentShader(const FragmentShaderPayload& payload){
+
+TextureShader::TextureShader() 
+    :
+    IShader(),
+    eye_pos_(0.0f, 0.0f, 0.0f),
+    lights_()
+{}
+TextureShader::~TextureShader(){}
+bool TextureShader::LoadProperties(const vector<Light>& lights, const Vec3f& eye_pos){
+    lights_ = lights;
+    eye_pos_ = eye_pos;
+}
+void TextureShader::VertexShader(){}
+Vec3f TextureShader::FragmentShader(const FragmentShaderPayload& payload){
     Vec3f Ka(0.00001f, 0.00001f, 0.00001f);
     Vec3f Kd = payload.texture;
     Vec3f Ks(0.7f, 0.7f, 0.7f);
@@ -91,11 +83,11 @@ Vec3f Shader::TextureFragmentShader(const FragmentShaderPayload& payload){
     }
     return dst_color;
 }
-Vec3f Shader::BumpFragmentShader(const FragmentShaderPayload& payload){
+/* Vec3f Shader::BumpFragmentShader(const FragmentShaderPayload& payload){
 
 }
 Vec3f Shader::DisplacementFragmentShader(const FragmentShaderPayload& payload){
 
-}
+} */
 
 } 

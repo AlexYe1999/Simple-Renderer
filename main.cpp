@@ -1,5 +1,4 @@
 #include"renderer/renderer.h"
-#include"geometry/geometry.h"
 #include<iostream>
 #include<vector>
 using namespace YeahooQAQ;
@@ -19,6 +18,8 @@ int main(int argc, char* argv[]){
         {Vec3f(10,10,0), Vec3f(990,990,0)},
         {Vec3f(1.0,1.0,1.0), Vec3f(1.0,1.0,1.0)}
     };
+    IShader* Shader_ptr = new PhongShader;
+    renderer.SetShader(Shader_ptr);
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
     renderer.LoadPointLights(lights);
     renderer.LoadLine(line);
@@ -51,7 +52,7 @@ int main(int argc, char* argv[]){
         renderer.MvpTransforme();
 
         renderer.RenderModel(true);
-        renderer.Rendering(ShaderType::TEXTURE_SHADING);
+        renderer.Rendering();
 
         renderer.GetTimeCost();
         renderer.ShowImage("Rendering", 20);

@@ -5,24 +5,20 @@ using namespace YeahooQAQ;
 
 int main(int argc, char* argv[]){
     Renderer renderer(1000, 1000, Vec3f(0.0f, 0.0f, 0.0f));
-    vector<Light> lights{
-        {Vec3f(0, 1.5, 0),Vec3f(100000.0f, 100000.0f, 100000.0f)},
-        {Vec3f(0, 3, -5),Vec3f(500000.0f, 500000.0f, 50000.0f)},
-        {Vec3f(-2, 0, -2),Vec3f(500000.0f, 0.0f, 0.0f)}, 
-        {Vec3f(2, 0, -2),Vec3f(0.0f, 100000.0f, 0.0f)},     
-        {Vec3f(2, 2, -2),Vec3f(0.0f, 0.0f, 500000.0f)},  
-        {Vec3f(-2, 2, -2),Vec3f(50000.0f, 50000.0f, 0.0f)}, 
-        {Vec3f(2, 2, -2),Vec3f(10000.0f, 10000.0f, 0.0f)}
-    };
-    Line line{
-        {Vec3f(10,10,0), Vec3f(990,990,0)},
-        {Vec3f(1.0,1.0,1.0), Vec3f(1.0,1.0,1.0)}
+    vector<PointLight> lights{
+        {Vec3f(0, 7, 0),Vec3f(1.0f, 1.0f, 1.0f)},
+        {Vec3f(0, 3, -5),Vec3f(1.0f, 1.0f, 1.0f)},
+        {Vec3f(-2, 0, -2),Vec3f(1.0f, 0.0f, 0.0f)}, 
+        {Vec3f(2, 0, -2),Vec3f(0.0f, 1.0f, 0.0f)},     
+        {Vec3f(2, 2, -2),Vec3f(0.0f, 0.0f, 1.0f)},  
+        {Vec3f(-2, 2, -2),Vec3f(1.0f, 1.0f, 0.0f)}, 
+        {Vec3f(2, 2, -2),Vec3f(1.0f, 1.0f, 0.0f)}
     };
     IShader* Shader_ptr = new PhongShader;
-    renderer.SetShader(Shader_ptr);
+    renderer.SetShader(Shader_ptr);    
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
     renderer.LoadPointLights(lights);
-    renderer.LoadLine(line);
+    renderer.RenderModel(true);
     Vec3f eye_pos(0.0f, 0.0f, -9.0f);
     float theta_per_second = 2.0f;
     int count = 0;
@@ -51,7 +47,6 @@ int main(int argc, char* argv[]){
 
         renderer.MvpTransforme();
 
-        renderer.RenderModel(true);
         renderer.Rendering();
 
         renderer.GetTimeCost();

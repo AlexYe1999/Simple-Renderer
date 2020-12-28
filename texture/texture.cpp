@@ -26,6 +26,9 @@ Texture::Texture(const string& texture_name)
 
 
 Vec3f Texture::getColor(const float& u, const float& v) const{
+    if(u > 1.0f || v > 1.0f || u < 0.0f || v < 0.0f){
+        return Vec3f();
+    }
     int u_img = u * image_width_;
     int v_img = (1.0f - v) * image_height_;
     auto color = image_data_.at<cv::Vec3b>(v_img, u_img);

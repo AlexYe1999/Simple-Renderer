@@ -4,6 +4,7 @@
 #include"../shader/shader.h"
 #include"../geometry/shape.h"
 #include"../texture/texture.h"
+#include"../object/object.h"
 #include<string>
 #include<opencv2/opencv.hpp>
 
@@ -46,7 +47,7 @@ public:
     bool LoadPoint(const vector<Point>& points);
     bool LoadLine(const Line& line);
     bool LoadLine(const vector<Line>& lines);
-    bool LoadPointLights(const vector<Light>& lights);
+    bool LoadPointLights(const vector<PointLight>& lights);
 
 public:
     bool MvpTransforme();
@@ -58,14 +59,14 @@ public:
 
 public:
     bool SetPixel(const Vec2i& pos, const Vec3f& color);
-    bool Draw2DLine(Vec2i p1, Vec2i p2, const  Vec3f& color);
-    bool DrawLine(Vec3f p1, Vec3f p2, const  Vec3f& color);
-    bool RenderTriangles(Vec3f* vertex, Vec3f* normals, Vec2f* uv, Texture* texture_ptr);
+    bool Draw2DLine(Vec2i p1, Vec2i p2, const  Vec3f& color1, const Vec3f& color2);
+    bool DrawLine(Vec3f p1, Vec3f p2, const  Vec3f& color1, const Vec3f& color2);
+    bool RenderTriangles(const Triangle& triangle);
 
 private:
-    Vec3f BarycentricInterpolation(const Vec3f vertex[3], const Vec2f& pixel);
-    void FindBoundingBox(const Vec3f vertex[3], Vec2f bbox[2]);
-    bool IsInsideTriangle(const Vec3f vertex[3], const Vec2f& pixel);
+    Vec3f BarycentricInterpolation(const array<Vec3f, 3>& vertex, const Vec2f& pixel);
+    void FindBoundingBox(const array<Vec3f, 3>& vertices,  Vec2f bbox[2]);
+    bool IsInsideTriangle(const array<Vec3f, 3>& vertices, const Vec2f& pixel);
 
 private:
     const  double time_per_tick_;
@@ -96,10 +97,11 @@ private:
     Matrix4f projection_matrix_;
 
 private:
+    Vec3f eye_pos_;
     vector<Point> points_;
     vector<Line> lines_;
     vector<Triangle> triangles_;
-    vector<Light> point_lights_;
+    vector<PointLight> point_lights_;
     vector<Texture*> textures_ptrs_;
     IShader* shader_ptr_;
 };

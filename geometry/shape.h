@@ -33,14 +33,13 @@ public:
 
 class Triangle : public Shape{
 public:
-    Triangle(Texture* texture = nullptr):vertices_world(),vertices_camera(),colors(),normals_world(),normals_camera(),texture_coords(),texture_ptr(texture){};
+    Triangle(Texture* texture = nullptr):vertices_world(),vertices_camera(),colors(),normals(),texture_coords(),texture_ptr(texture){};
     ~Triangle(){};
 
 public:
     std::array<Vec3f, 3> vertices_world;
-    std::array<Vec3f, 3> normals_world;
     std::array<Vec3f, 3> vertices_camera;
-    std::array<Vec3f, 3> normals_camera;
+    std::array<Vec3f, 3> normals;
     std::array<Vec3f, 3> colors;
     std::array<Vec2f, 3> texture_coords;
     Texture* texture_ptr;

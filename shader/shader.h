@@ -21,13 +21,16 @@ public:
     virtual ~IShader();
 
 public:
-    virtual bool SetEyePosition(const Vec3f& eye_pos);
-    virtual bool SetLights(const vector<PointLight>& lights);
+    bool SetEyePosition(const Vec3f& eye_pos);
+    bool SetLights(const vector<PointLight>& lights);
 
 public:
     virtual void VertexShader();
     virtual Vec3f FragmentShader(const FragmentShaderPayload& payload);
 
+protected:
+    Vec3f eye_pos_;
+    vector<PointLight> lights_;
 };
 
 class NormalShader : public IShader{
@@ -48,32 +51,40 @@ public:
     ~PhongShader();
 
 public:
-    bool SetEyePosition(const Vec3f& eye_pos);
-    bool SetLights(const vector<PointLight>& lights);
-public:
     void VertexShader();
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
 
-private:
-    Vec3f eye_pos_;
-    vector<PointLight> lights_;
 };
 
 class TextureShader : public IShader{
 public:
     TextureShader();
     ~TextureShader();
-public:
-    bool SetEyePosition(const Vec3f& eye_pos);
-    bool SetLights(const vector<PointLight>& lights);
     
 public:
     void VertexShader();
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
 
-private:
-    Vec3f eye_pos_;
-    vector<PointLight> lights_;
+};
+
+class BumpShader : public IShader{
+public:
+    BumpShader();
+    ~BumpShader();
+
+public:
+    void VertexShader();
+    Vec3f FragmentShader(const FragmentShaderPayload& payload);
+};
+
+class DisplacementShader : public IShader{
+public:
+    DisplacementShader();
+    ~DisplacementShader();
+
+public:
+    void VertexShader();
+    Vec3f FragmentShader(const FragmentShaderPayload& payload);
 };
 
 }

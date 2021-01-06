@@ -6,20 +6,22 @@ using namespace YeahooQAQ;
 int main(int argc, char* argv[]){
     Renderer renderer(1000, 1000, Vec3f(0.0f, 0.0f, 0.0f));
     vector<PointLight> lights{
-        {Vec3f(0, 7, 0),Vec3f(1.0f, 1.0f, 1.0f)},
+        {Vec3f(0, 3, 0),Vec3f(1.0f, 1.0f, 1.0f)},
         {Vec3f(0, 3, -5),Vec3f(1.0f, 1.0f, 1.0f)},
-        {Vec3f(-2, 0, -2),Vec3f(1.0f, 0.0f, 0.0f)}, 
-        {Vec3f(2, 0, -2),Vec3f(0.0f, 1.0f, 0.0f)},     
-        {Vec3f(2, 2, -2),Vec3f(0.0f, 0.0f, 1.0f)},  
-        {Vec3f(-2, 2, -2),Vec3f(1.0f, 1.0f, 0.0f)}, 
-        {Vec3f(2, 2, -2),Vec3f(1.0f, 1.0f, 0.0f)}
+        {Vec3f(0, -3, 0),Vec3f(1.0f, 1.0f, 1.0f)},      
+        {Vec3f(-2, 0, 0),Vec3f(1.0f, 0.0f, 0.0f)}, 
+        {Vec3f(0, 2, 0),Vec3f(0.0f, 1.0f, 0.0f)},     
+        {Vec3f(0, 0, -2),Vec3f(0.0f, 0.0f, 1.0f)},  
+        {Vec3f(-2, -2, 2),Vec3f(1.0f, 1.0f, 0.0f)}, 
+        {Vec3f(2, -2, -2),Vec3f(0.0f, 1.0f, 1.0f)},
+        {Vec3f(-2, 2, -2),Vec3f(1.0f, 0.0f, 1.0f)}
     };
-    IShader* Shader_ptr = new PhongShader;
+    IShader* Shader_ptr = new TextureShader;
     renderer.SetShader(Shader_ptr);    
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
     renderer.LoadPointLights(lights);
     renderer.RenderModel(true);
-    Vec3f eye_pos(0.0f, 0.0f, -9.0f);
+    Vec3f eye_pos(0.0f, 0.0f, -6.0f);
     float theta_per_second = 2.0f;
     int count = 0;
     char key = '0';

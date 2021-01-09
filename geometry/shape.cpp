@@ -1,5 +1,5 @@
 #include"shape.h"
-namespace YeahooQAQ{
+namespace LemonCube{
 
 Shape::~Shape(){};
 

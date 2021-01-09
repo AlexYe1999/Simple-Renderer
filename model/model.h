@@ -7,7 +7,7 @@
 #include<fstream>
 #include<sstream>
 
-namespace YeahooQAQ{
+namespace LemonCube{
 using namespace std;
 
 class Model{

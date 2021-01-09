@@ -1,6 +1,6 @@
 #include"model.h"
 
-namespace YeahooQAQ{
+namespace LemonCube{
 using namespace std;
 
 Model::Model(const string& filename)

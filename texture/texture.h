@@ -3,7 +3,7 @@
 #include"../geometry/geometry.h"
 #include<opencv2/opencv.hpp>
 #include<string>
-namespace YeahooQAQ{
+namespace LemonCube{
 using namespace std;
 
 class Texture{

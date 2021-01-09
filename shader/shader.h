@@ -3,7 +3,7 @@
 #include"../geometry/geometry.h"
 #include"../object/object.h"
 #include<vector>
-namespace YeahooQAQ{
+namespace LemonCube{
 using namespace std;
 
 struct FragmentShaderPayload{
@@ -22,7 +22,7 @@ public:
 
 public:
     bool SetEyePosition(const Vec3f& eye_pos);
-    bool SetLights(const vector<PointLight>& lights);
+    bool SetLights(const vector<LightSource>& lights);
 
 public:
     virtual void VertexShader();
@@ -30,7 +30,7 @@ public:
 
 protected:
     Vec3f eye_pos_;
-    vector<PointLight> lights_;
+    vector<LightSource> lights_;
 };
 
 class NormalShader : public IShader{

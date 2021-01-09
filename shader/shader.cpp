@@ -1,14 +1,16 @@
 #include"shader.h"
 
-namespace YeahooQAQ{
+namespace LemonCube{
     
 IShader::IShader(){}
 IShader::~IShader(){}
 bool IShader::SetEyePosition(const Vec3f& eye_pos){
     eye_pos_ = eye_pos;
+    return true;
 }
-bool IShader::SetLights(const vector<PointLight>& lights){
+bool IShader::SetLights(const vector<LightSource>& lights){
     lights_ = lights;
+    return true;
 }
 void IShader::VertexShader(){}
 Vec3f IShader::FragmentShader(const FragmentShaderPayload& payload){
@@ -34,7 +36,7 @@ Vec3f PhongShader::FragmentShader(const FragmentShaderPayload& payload){
     Vec3f pos = payload.position;
     Vec3f normal = payload.normal; 
     Vec3f pos2eye = eye_pos_ - pos;
-    for(const PointLight& light : lights_){
+    for(const LightSource& light : lights_){
         Vec3f light_intensity = light.intensity;
         Vec3f  pos2light = light.position - pos;
         Vec3f n = (pos2light.normalized() + pos2eye.normalized());
@@ -57,7 +59,7 @@ Vec3f TextureShader::FragmentShader(const FragmentShaderPayload& payload){
     Vec3f pos = payload.position;
     Vec3f normal = payload.normal; 
     Vec3f pos2eye = eye_pos_ - pos;
-    for(const PointLight& light : lights_){
+    for(const LightSource& light : lights_){
         Vec3f light_intensity = light.intensity;
         Vec3f  pos2light = light.position - pos;
         Vec3f n = (pos2light.normalized() + pos2eye.normalized());

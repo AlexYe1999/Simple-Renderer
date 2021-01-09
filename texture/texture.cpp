@@ -1,6 +1,6 @@
 #include "texture.h"
 
-namespace YeahooQAQ{
+namespace LemonCube{
 
 Texture::Texture(const string& texture_name)
     :

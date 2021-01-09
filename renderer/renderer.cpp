@@ -1,5 +1,5 @@
 #include"renderer.h"
-namespace YeahooQAQ{
+namespace LemonCube{
 
 Renderer::Renderer(const unsigned int& width, const unsigned int& height, const Vec3f& background_color)
     :
@@ -20,14 +20,17 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     is_render_edges_(false),
     is_render_normals_(false),
     is_render_models_(false),
+    eye_fov_(0.0f),
+    aspect_ratio_(canvas_width_ / canvas_height_),
     z_near_(0.0f),
     z_far_(0.0f),
     model_matrix_(),
     view_matrix_(),
     projection_matrix_(),
-    point_lights_(),
+    lights_(),
     textures_ptrs_(),
-    shader_ptr_(nullptr)
+    shader_ptr_(nullptr),
+    spheres_()
 {
     frame_buffer_ = new Vec3f[width * height];
     z_buffer_ = new float[width * height];
@@ -88,7 +91,7 @@ void Renderer::GetTimeCost(){
 void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms){
     StopClock();
     cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
-    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);        
+    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
     cv::namedWindow(window_name);
     imshow(window_name, image);
     cv::waitKey(delay_ms);
@@ -198,7 +201,36 @@ bool Renderer::Rendering(){
         }
     }
 
+    return true;
+}
 
+bool Renderer::RayTracing(){
+    Vec3f white(1.0f, 1.0f, 1.0f);
+    Vec3f blue(0.5f, 0.7f, 1.0f);
+    Matrix3f cord(model_matrix_.toMatrix3().transposed());
+    Ray ray(eye_pos_, eye_pos_.normalized()*-1.0f);
+    float theta = eye_fov_ * 3.1415926535898f / 360.0f;
+    float height = atan(theta) * z_near_;
+    float width = height * aspect_ratio_;
+    for(int  i = 0; i < canvas_height_; i++){
+        for(int j = 0; j < canvas_width_; j++){
+            ray.direction = cord[0] * (j * 2.0f / canvas_width_ - 1.0f) * width
+                        + cord[1] * (i * 2.0f / canvas_height_ - 1.0f) * height
+                        + cord[2] * z_near_;
+            ray.direction = ray.direction.normalized();
+
+            SetPixel(Vec2i(j, i+1), white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f));
+
+            for(const Sphere& sphere : spheres_){
+                float t;
+                if((t = sphere.HitObject(ray)) > 0.0f){
+                    Vec3f normal = (ray.at(t) - sphere.position).normalized();
+                    SetPixel(Vec2i(j, i+1), (normal+Vec3f(1.0f, 1.0f, 1.0f))*0.5f);
+                    break;
+                }
+            }
+        }
+    } 
     return true;
 }
 
@@ -266,8 +298,15 @@ bool Renderer::LoadLine(const vector<Line>& lines){
     return true;
 }
 
-bool Renderer::LoadPointLights(const vector<PointLight>& lights){
+bool Renderer::LoadLightSource(const vector<LightSource>& lights){
     shader_ptr_->SetLights(lights);
+    return true;
+}
+bool Renderer::LoadSpheres(const vector<Sphere>& spheres){
+    for(const Sphere& sphere : spheres){
+        spheres_.push_back(sphere);
+    }
+    return true;
 }
 
 bool Renderer::MvpTransforme(){
@@ -305,62 +344,64 @@ void Renderer::SetModelMatrix(const float& x_axis, const float& y_axis, const fl
     float theta_x = x_axis * 3.1415926535898f / 180.0f;
     float theta_y = y_axis * 3.1415926535898f / 180.0f;
     Matrix4f model_matrix_x = {
-        {1.0f, 0.0f,                    0.0f,                  0.0f},
-        {0.0f, cos(theta_x),  -sin(theta_x), 0.0f},
-        {0.0f, sin(theta_x), cos(theta_x), 0.0f},
-        {0.0f, 0.0f,                    0.0f,                   1.0f}
+        {1.0f, 0.0f,            0.0f,           0.0f},
+        {0.0f, cos(theta_x),    -sin(theta_x),  0.0f},
+        {0.0f, sin(theta_x),    cos(theta_x),   0.0f},
+        {0.0f, 0.0f,            0.0f,           1.0f}
     };
     Matrix4f model_matrix_y = {
-        {cos(theta_y), 0.0f, sin(theta_y), 0.0f},
-        {0.0f,                   1.0f, 0.0f,                   0.0f},
-        {-sin(theta_y),0.0f, cos(theta_y), 0.0f},
-        {0.0f,                   0.0f, 0.0f,                   1.0f},
+        {cos(theta_y),  0.0f,   sin(theta_y),   0.0f},
+        {0.0f,          1.0f,   0.0f,           0.0f},
+        {-sin(theta_y), 0.0f,   cos(theta_y),   0.0f},
+        {0.0f,          0.0f,   0.0f,           1.0f},
     };
     model_matrix_ = model_matrix_x * model_matrix_y;
 }
 void Renderer::SetViewMatrix(const Vec3f& eye_pos){
     eye_pos_ = eye_pos;
     view_matrix_ = Matrix4f{
-        {1.0f,                  0.0f,               0.0f,               0.0f},
-        {0.0f,                  1.0f,               0.0f,               0.0f},
-        {0.0f,                  0.0f,               1.0f,               0.0f},
-        {-eye_pos.x, -eye_pos.y, -eye_pos.z, 1.0f}
+        {1.0f,          0.0f,           0.0f,       0.0f},
+        {0.0f,          1.0f,           0.0f,       0.0f},
+        {0.0f,          0.0f,           1.0f,       0.0f},
+        {-eye_pos.x,    -eye_pos.y,     -eye_pos.z, 1.0f}
     };
 }
-void Renderer::SetProjectionMatrix(const float& eye_fov, const float& aspect_ratio, const float& zNear, const float& zFar){
+void Renderer::SetProjectionMatrix(const float& eye_fov,const float& aspect_ratio,const float& zNear, const float& zFar){
+    eye_fov_ = eye_fov;
+    aspect_ratio_ = aspect_ratio;
     z_near_ = zNear;
     z_far_ = zFar;
     float theta = eye_fov * 3.1415926535898f / 360.0f;
     float top = atan(theta) * zNear;
-    float bottom =  -top;
-    float right = top * aspect_ratio;
+    float bottom = -top;
+    float right = top * aspect_ratio_;
     float left = -right;
     Matrix4f otho1 = {
-        {1.0f,                               0.0f,                                      0.0f,                                  0.0f},
-        {0.0f,                               1.0f,                                      0.0f,                                  0.0f},
-        {0.0f,                               0.0f,                                      1.0f,                                  0.0f},
-        {(left + right) * -0.5f, (top + bottom) * -0.5f ,(zNear + zFar) * -0.5f ,1.0f}
+        {1.0f,                      0.0f,                       0.0f,                   0.0f},
+        {0.0f,                      1.0f,                       0.0f,                   0.0f},
+        {0.0f,                      0.0f,                       1.0f,                   0.0f},
+        {(left + right) * -0.5f,    (top + bottom) * -0.5f,     (zNear + zFar) * -0.5f, 1.0f}
     };
 
     Matrix4f otho2 = {
-        {2.0f/(right-left), 0,                                   0,                                 0},
-        {0,                             2.0f/(top-bottom), 0,                                 0},
-        {0,                             0,                                   2.0f/(zFar-zNear), 0},
-        {0,                             0,                                   0,                                 1}
+        {2.0f/(right-left), 0,                 0,                   0},
+        {0,                 2.0f/(top-bottom), 0,                   0},
+        {0,                 0,                 2.0f/(zFar-zNear),   0},
+        {0,                 0,                 0,                   1}
     };
 
     Matrix4f perspective = {
-        {zNear, 0.0f,     0.0f,                        0},
-        {0.0f,     zNear, 0.0f,                        0},
-        {0.0f,     0.0f,      zNear+zFar,  1.0f},
-        {0.0f,     0.0f,      -zNear*zFar, 0.0f}
+        {zNear,    0.0f,  0.0f,            0},
+        {0.0f,     zNear, 0.0f,            0},
+        {0.0f,     0.0f,  zNear+zFar,   1.0f},
+        {0.0f,     0.0f,  -zNear*zFar,  0.0f}
     };
 
     projection_matrix_ = otho2 * otho1 * perspective;
 }
 
 bool Renderer::SetPixel(const Vec2i& pos, const Vec3f& color){
-    int ind = (canvas_height_-pos.y)*canvas_width_ + pos.x;
+    int ind = (canvas_height_-pos.y) * canvas_width_ + pos.x;
     frame_buffer_[ind] = color;
     return true;   
 }

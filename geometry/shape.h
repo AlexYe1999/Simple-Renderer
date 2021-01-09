@@ -3,7 +3,7 @@
 #include"../texture/texture.h"
 #include"geometry.h"
 #include<array>
-namespace YeahooQAQ{
+namespace LemonCube{
 
 class Shape{
 public:

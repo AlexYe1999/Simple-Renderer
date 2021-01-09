@@ -2,7 +2,7 @@
 #define GEOMETRY_H__
 #include<iostream>
 #include<cmath>
-namespace YeahooQAQ{
+namespace LemonCube{
 using namespace std;
 
 template<typename T> struct Vec2;
@@ -48,7 +48,7 @@ struct Vec3{
     inline Vec3<T> operator /=(const T& n)  {x /= n; y /= n; z /= n; return *this;}
     inline Vec3<T> operator *=(const T& n)  {x *= n; y *= n; z *= n; return *this;}
     inline Vec3<T> operator *(const Matrix3<T>& matrix) const {return Vec3<T>((*this)*matrix.vec[0], (*this)*matrix.vec[1], (*this)*matrix.vec[2]);};
-    inline T& operator [](const int& index) {if(index == 0) {return x;}else if(index == 1){ return y;}else if(index == 2){ return z;}}
+    inline T& operator [](const int& index) {if(index == 0) {return x;}else if(index == 1){ return y;}else{ return z;}}
     inline Vec3<T> cwiseProduct(const Vec3<T>& vec) const {return Vec3<T>(x * vec.x, y * vec.y, z * vec.z);}
     inline  Vec3<T> cross(const Vec3<T>& vec) const {return Vec3<T>(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);}
     inline Vec3<T> normalized(){return (*this)/sqrt(x*x + y*y + z*z);}
@@ -84,7 +84,7 @@ typedef Vec2<float> Vec2f;
 typedef Vec2<double> Vec2d;
 typedef Vec3<int> Vec3i;
 typedef Vec3<float> Vec3f;
-typedef Vec3<double> Vece3d;
+typedef Vec3<double> Vec3d;
 typedef Vec4<int> Vec4i;
 typedef Vec4<float> Vec4f;
 typedef Vec4<double> Vece4d;
@@ -264,6 +264,7 @@ ostream& operator <<(ostream& os, const Matrix2<T>& m2){
     os<<" "<< m2.vec[0].x << " , " << m2.vec[1].x <<" \n";
     os<<" "<< m2.vec[0].y << " , " << m2.vec[1].y <<" \n";
     os<<"}\n";
+    return os;
 }
 
 template<typename T> 
@@ -273,6 +274,7 @@ ostream& operator <<(ostream& os, const Matrix3<T>& m3){
     os<<" "<< m3.vec[0].y << " , " << m3.vec[1].y <<" , "<<m3.vec[2].y<<" \n";
     os<<" "<< m3.vec[0].z << " , " << m3.vec[1].z <<" , "<<m3.vec[2].z<<" \n";
     os<<"}\n";
+    return os;
 }
 
 template<typename T> 
@@ -283,6 +285,7 @@ ostream& operator <<(ostream& os, const Matrix4<T>& m4){
     os<<" "<< m4.vec[0].z << " , " << m4.vec[1].z <<" , "<< m4.vec[2].z << " , "<< m4.vec[3].z<<" \n";
     os<<" "<< m4.vec[0].w << " , " <<m4.vec[1].w <<" , "<< m4.vec[2].w << " , "<< m4.vec[3].w<<" \n";
     os<<"}\n";
+    return os;
 }
 
 }

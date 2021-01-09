@@ -8,7 +8,7 @@
 #include<string>
 #include<opencv2/opencv.hpp>
 
-namespace YeahooQAQ{
+namespace LemonCube{
 using namespace std;
 
 class Renderer{
@@ -29,14 +29,15 @@ public:
 
 public:
     bool Rendering();
+    bool RayTracing();
 
 public:
     void MSAA(const bool& is_open){is_MSAA_open_ = is_open;}
     void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
-    bool RenderModelVerties(const bool& is_render_verties){is_render_verties_ = is_render_verties;}
-    bool RenderModelEdges(const bool& is_render_edges){ is_render_edges_ = is_render_edges;}
-    bool RenderModelNormals(const bool& is_render_normals){is_render_normals_ = is_render_normals;}
-    bool RenderModel(const bool& is_render_models){is_render_models_ = is_render_models;}
+    bool RenderModelVerties(const bool& is_render_verties){is_render_verties_ = is_render_verties; return true;}
+    bool RenderModelEdges(const bool& is_render_edges){ is_render_edges_ = is_render_edges;return true;}
+    bool RenderModelNormals(const bool& is_render_normals){is_render_normals_ = is_render_normals;return true;}
+    bool RenderModel(const bool& is_render_models){is_render_models_ = is_render_models;return true;}
 
 public:
     bool SetShader(IShader*& shader);
@@ -47,15 +48,14 @@ public:
     bool LoadPoint(const vector<Point>& points);
     bool LoadLine(const Line& line);
     bool LoadLine(const vector<Line>& lines);
-    bool LoadPointLights(const vector<PointLight>& lights);
+    bool LoadLightSource(const vector<LightSource>& lights);
+    bool LoadSpheres(const vector<Sphere>& sphere);
 
 public:
     bool MvpTransforme();
     void SetModelMatrix(const float& x_axis, const float& y_axis, const float& z_axis);
     void SetViewMatrix(const Vec3f& eye_pos);
-    void SetProjectionMatrix(const float& eye_fov, 
-                                                        const float& aspect_ratio,
-                                                        const float& zNear, const float& zFar);
+    void SetProjectionMatrix(const float& eye_fov, const float& aspect_ratio, const float& zNear, const float& zFar);
 
 public:
     bool SetPixel(const Vec2i& pos, const Vec3f& color);
@@ -90,20 +90,26 @@ private:
     bool is_render_normals_;
     bool is_render_models_;
 private:
+    float eye_fov_;
+    float aspect_ratio_;
     float z_near_;
     float z_far_;
+    Vec3f eye_pos_;
     Matrix4f model_matrix_;
     Matrix4f view_matrix_;
     Matrix4f projection_matrix_;
 
 private:
-    Vec3f eye_pos_;
     vector<Point> points_;
     vector<Line> lines_;
     vector<Triangle> triangles_;
-    vector<PointLight> point_lights_;
+    vector<LightSource> lights_;
     vector<Texture*> textures_ptrs_;
     IShader* shader_ptr_;
+
+private:
+    vector<Sphere> spheres_;
+
 };
 
 }

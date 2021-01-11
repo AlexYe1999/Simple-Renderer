@@ -2,6 +2,7 @@
 #define GEOMETRY_H__
 #include<iostream>
 #include<cmath>
+#include<cstdlib>
 namespace LemonCube{
 using namespace std;
 
@@ -19,7 +20,7 @@ struct Vec4{
         struct {T vertex, uv, normal, none;};
     };
     Vec4() : x(0), y(0), z(0), w(0){}
-    Vec4(T _x, T _y, T _z, T _w = 0) : x(_x), y(_y), z(_z), w(_w){}
+    Vec4(const T& _x, const T& _y, const T& _z, const T& _w = 0) : x(_x), y(_y), z(_z), w(_w){}
     inline Vec4<T> operator +(const Vec4<T>& vec) const { return Vec4<T>(x + vec.x, y + vec.y, z + vec.z, w + vec.w); }
     inline Vec4<T> operator -(const Vec4<T>& vec) const {return Vec4<T>(x - vec.x, y - vec.y, z - vec.z, w - vec.w); }
     inline Vec4<T> operator *(const T& n) const {return Vec4<T>(n * x, n * y, n * z, n * w); };
@@ -38,7 +39,15 @@ struct Vec3{
         struct {T vertex, uv, normal;};
     };
     Vec3() : x(0), y(0), z(0){}
-    Vec3(T _x , T _y, T _z = 0) : x(_x), y(_y), z(_z){}
+    Vec3(const T& _x , const T& _y, const T& _z = 0) : x(_x), y(_y), z(_z){}
+    static inline Vec3<T> RandomInSphere(const T& diameter){
+        while(true){
+            T x = (rand() / (RAND_MAX + 1.0f) - 0.5f) * diameter;
+            T y = (rand() / (RAND_MAX + 1.0f) - 0.5f) * diameter; 
+            T z = (rand() / (RAND_MAX + 1.0f) - 0.5f) * diameter;  
+            if(x*x + y*y + z*z < 1.0f) return Vec3<T>(x, y, z);
+        }
+    }
     inline Vec3<T> operator +(const Vec3<T>& vec) const { return Vec3<T>(x + vec.x, y + vec.y, z + vec.z);}
     inline Vec3<T> operator -(const Vec3<T>& vec) const {return Vec3<T>(x - vec.x, y - vec.y, z - vec.z);}
     inline Vec3<T> operator *(const T& n) const {return Vec3<T>(n * x, n * y, n * z);};
@@ -66,13 +75,13 @@ struct Vec2{
         struct {T u, v;};
     };
     Vec2() : x(0), y(0){}
-    Vec2(T _x, T _y) : x(_x), y(_y){}
+    Vec2(const T& _x, const T& _y) : x(_x), y(_y){}
     inline Vec2<T> operator +(const Vec2<T>& vec) const { return Vec2<T>(x + vec.x, y + vec.y);}
     inline Vec2<T> operator -(const Vec2<T>& vec) const { return Vec2<T>(x - vec.x, y - vec.y);}
     inline Vec2<T> operator *(const T& n) const { return Vec2<T>(n * x, n * y);}
     inline T operator *(const Vec2<T>& vec) const {return T(x*vec.x + y*vec.y);}
     inline T cross(const Vec2<T>& vec) const {return T(x * vec.y - y * vec.x);}
-    inline T& operator [](const int& index) {if(index == 0){ return x; }else if(index == 1){ return y;}}
+    inline T& operator [](const int& index) {if(index == 0){ return x; }else{ return y;}}
     inline Vec3<T> toVec3(const T& z) const { return Vec3<T>(x, y, z);}
     inline Vec3<T> toVec3() const{ return Vec3<T>(x, y, T(0));}
     template<typename> friend ostream& operator <<(ostream& os, const Vec2<T>& vec2);

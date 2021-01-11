@@ -156,9 +156,9 @@ bool Renderer::Rendering(){
                 v2 = triangle.texture_ptr->getColor(triangle.texture_coords[2].u, triangle.texture_coords[2].v);
             }
 
-            SetPixel(Vec2i(vertex[0].x, vertex[0].y), v0);
-            SetPixel(Vec2i(vertex[1].x, vertex[1].y), v1);
-            SetPixel(Vec2i(vertex[2].x, vertex[2].y), v2);
+            SetPixel(vertex[0].x, vertex[0].y, v0);
+            SetPixel(vertex[1].x, vertex[1].y, v1);
+            SetPixel(vertex[2].x, vertex[2].y, v2);
         }
         if(is_render_edges_){
             for(int i = 0; i < 3; i++){
@@ -207,38 +207,22 @@ bool Renderer::Rendering(){
     return true;
 }
 
-bool Renderer::RayTracing(){
-    Vec3f white(1.0f, 1.0f, 1.0f);
-    Vec3f blue(0.5f, 0.7f, 1.0f);
+bool Renderer::RayTracing(const unsigned int& bounding_times){
     Ray ray(eye_pos_, eye_pos_.normalized()*-1.0f);
-    HitPointInfo info;
-
     for(int  y = 0; y < canvas_height_; y++){
         for(int x = 0; x < canvas_width_; x++){
             if(!is_MSAA_open_){
                 ray.direction = GetRayVector(x, y);
-                if(hitable_list_.HitObject(ray, 0, 1e6, info)){
-                    SetPixel(Vec2i(x, y+1), (info.normal + Vec3f(1.0f,1.0f,1.0f) * 0.5f));
-                }
-                else{
-                    SetPixel(Vec2i(x, y+1), white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f));                
-                }                
+                SetPixel(x, y+1, GetRayColor(ray, bounding_times));
             }
             else{
                 Vec3f pixel_color(0.0f,0.0f,0.0f);                
                 for(unsigned int i = 0; i < sample_rate_; i++){
                     ray.direction = GetRayVector(x+(rand()%100)*0.01f, y+(rand()%100)*0.01f);
-                    if(hitable_list_.HitObject(ray, 0, 1e6, info)){
-                        pixel_color += (info.normal + Vec3f(1.0f,1.0f,1.0f) * 0.5f);
-                    }
-                    else{
-                        pixel_color +=  white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f);                
-                    }              
-                }
-                SetPixel(Vec2i(x, y+1), pixel_color/sample_rate_);                
+                    pixel_color += GetRayColor(ray, bounding_times);
+                }             
+                SetPixel(x, y+1, pixel_color / sample_rate_);                
             }
-
-                
         }
     } 
 
@@ -414,8 +398,8 @@ void Renderer::SetProjectionMatrix(const float& eye_fov,const float& aspect_rati
     projection_matrix_ = otho2 * otho1 * perspective;
 }
 
-bool Renderer::SetPixel(const Vec2i& pos, const Vec3f& color){
-    int ind = (canvas_height_-pos.y) * canvas_width_ + pos.x;
+bool Renderer::SetPixel(const unsigned int& x, const unsigned int& y, const Vec3f& color){
+    int ind = (canvas_height_- y) * canvas_width_ + x;
     frame_buffer_[ind] = color;
     return true;   
 }
@@ -442,10 +426,10 @@ bool Renderer::Draw2DLine(Vec2i p1, Vec2i p2, const Vec3f& color1, const Vec3f& 
         float t = 1.0f * x / dx;
         Vec3f color = color2 * t + color1 * (1.0f - t);
         if(is_reverse){
-            SetPixel(Vec2i(y, x), color);        
+            SetPixel(y, x, color);        
         }
         else{
-            SetPixel(Vec2i(x, y), color);
+            SetPixel(x, y, color);
         }
         error += derror;
         if(error > dx){
@@ -484,13 +468,13 @@ bool Renderer::DrawLine(Vec3f p1, Vec3f p2, const Vec3f& color1, const Vec3f& co
         if(is_reverse){
             if(z < z_buffer_[x * canvas_width_+ y]){
                 z_buffer_[x * canvas_width_+ y] = z;
-                SetPixel(Vec2i(y, x), color);    
+                SetPixel(y, x, color);    
             }            
         }
         else{
             if(z < z_buffer_[y * canvas_width_+ x]){
                 z_buffer_[y * canvas_width_+ x] = z;
-                SetPixel(Vec2i(x, y), color);
+                SetPixel(x, y, color);
             }
         }
         error += derror;
@@ -526,7 +510,7 @@ bool Renderer::RenderTriangles(const Triangle& triangle){
                         Vec3f color(1.0f, 1.0f, 1.0f);
                         FragmentShaderPayload payload(pos, color, normal, texture);
                         color = shader_ptr_->FragmentShader(payload);
-                        SetPixel(Vec2i(x, y), color);
+                        SetPixel(x, y, color);
                     }
                 }
             }
@@ -556,7 +540,7 @@ bool Renderer::RenderTriangles(const Triangle& triangle){
                     Vec3f color(1.0f, 1.0f, 1.0f);
                     FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal.normalized(), texture);
                     color = shader_ptr_->FragmentShader(payload) * weight;
-                    SetPixel(Vec2i(x, y), color);
+                    SetPixel(x, y, color);
                 }
             }
         }
@@ -623,9 +607,22 @@ Vec3f Renderer::BarycentricInterpolation(const array<Vec3f,3>& vertex,  const Ve
 }
 
 Vec3f Renderer::GetRayVector(const float& x, const float& y){
-    return view_port_cord_[0] * (x * 2.0f / canvas_width_ - 1.0f) * view_port_width_half_
+    return (view_port_cord_[0] * (x * 2.0f / canvas_width_ - 1.0f) * view_port_width_half_
          + view_port_cord_[1] * (y * 2.0f / canvas_height_ - 1.0f) * view_port_height_half_
-         + view_port_cord_[2] * z_near_;
+         + view_port_cord_[2] * z_near_).normalized();
+}
+
+Vec3f Renderer::GetRayColor(const Ray& ray, const unsigned int step){
+    HitPointInfo info;
+    if(step == 0){
+        return Vec3f(0.0f, 0.0f, 0.0f);
+    }
+    if(hitable_list_.HitObject(ray, 0.001f, 1e6, info)){
+        Vec3f rand_vector = Vec3<float>::RandomInSphere(1.0f);
+        return GetRayColor(Ray(info.hit_point, info.normal+info.hit_point+rand_vector-info.hit_point), step-1) * 0.5f;
+    }
+    int t = ray.direction.y*0.5;
+    return Vec3f(1.0f, 1.0f, 1.0f)*(0.5f - t) + Vec3f(0.5f, 0.7f, 1.0f)*(0.5f + t);
 }
 
 }

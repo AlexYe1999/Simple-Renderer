@@ -29,7 +29,7 @@ public:
 
 public:
     bool Rendering();
-    bool RayTracing();
+    bool RayTracing(const unsigned int& bounding_times = 20);
 
 public:
     void MSAA(const bool& is_open, const unsigned int sample_rate = 1){is_MSAA_open_ = is_open; sample_rate_ = sample_rate;}
@@ -58,16 +58,18 @@ public:
     void SetProjectionMatrix(const float& eye_fov, const float& aspect_ratio, const float& zNear, const float& zFar);
 
 public:
-    bool SetPixel(const Vec2i& pos, const Vec3f& color);
+    bool SetPixel(const unsigned int& x, const unsigned int& y, const Vec3f& color);
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  Vec3f& color1, const Vec3f& color2);
     bool DrawLine(Vec3f p1, Vec3f p2, const  Vec3f& color1, const Vec3f& color2);
     bool RenderTriangles(const Triangle& triangle);
 
 private:
-    void FindBoundingBox(const array<Vec3f, 3>& vertices,  Vec2f bbox[2]);
+    void FindBoundingBox(const array<Vec3f, 3>& vertices, Vec2f bbox[2]);
     bool IsInsideTriangle(const array<Vec3f, 3>& vertices, const Vec2f& pixel);
     inline Vec3f BarycentricInterpolation(const array<Vec3f, 3>& vertex, const Vec2f& pixel);
     inline Vec3f GetRayVector(const float& x, const float& y);
+    Vec3f GetRayColor(const Ray& ray, const unsigned int step = 10);
+
 private:
     const  double time_per_tick_;
     bool is_clock_running_;

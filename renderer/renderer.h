@@ -4,7 +4,7 @@
 #include"../shader/shader.h"
 #include"../geometry/shape.h"
 #include"../texture/texture.h"
-#include"../object/object.h"
+#include"../hitable_list/hitable_list.hpp"
 #include<string>
 #include<opencv2/opencv.hpp>
 
@@ -49,7 +49,7 @@ public:
     bool LoadLine(const Line& line);
     bool LoadLine(const vector<Line>& lines);
     bool LoadLightSource(const vector<LightSource>& lights);
-    bool LoadSpheres(const vector<Sphere>& sphere);
+    bool LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs);
 
 public:
     bool MvpTransforme();
@@ -108,7 +108,7 @@ private:
     IShader* shader_ptr_;
 
 private:
-    vector<Sphere> spheres_;
+    HitableList hitable_list;
 
 };
 

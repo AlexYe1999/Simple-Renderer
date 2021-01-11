@@ -30,7 +30,7 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     lights_(),
     textures_ptrs_(),
     shader_ptr_(nullptr),
-    spheres_()
+    hitable_list()
 {
     frame_buffer_ = new Vec3f[width * height];
     z_buffer_ = new float[width * height];
@@ -209,6 +209,7 @@ bool Renderer::RayTracing(){
     Vec3f blue(0.5f, 0.7f, 1.0f);
     Matrix3f cord(model_matrix_.toMatrix3().transposed());
     Ray ray(eye_pos_, eye_pos_.normalized()*-1.0f);
+    HitPointInfo info;
     float theta = eye_fov_ * 3.1415926535898f / 360.0f;
     float height = atan(theta) * z_near_;
     float width = height * aspect_ratio_;
@@ -218,19 +219,17 @@ bool Renderer::RayTracing(){
                         + cord[1] * (i * 2.0f / canvas_height_ - 1.0f) * height
                         + cord[2] * z_near_;
             ray.direction = ray.direction.normalized();
-
-            SetPixel(Vec2i(j, i+1), white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f));
-
-            for(const Sphere& sphere : spheres_){
-                float t;
-                if((t = sphere.HitObject(ray)) > 0.0f){
-                    Vec3f normal = (ray.at(t) - sphere.position).normalized();
-                    SetPixel(Vec2i(j, i+1), (normal+Vec3f(1.0f, 1.0f, 1.0f))*0.5f);
-                    break;
-                }
+            if(hitable_list.HitObject(ray, 0, 1e6, info)){
+                SetPixel(Vec2i(j, i+1), (info.normal + Vec3f(1.0f,1.0f,1.0f) * 0.5f));
             }
+            else{
+                SetPixel(Vec2i(j, i+1), white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f));                
+            }
+                
         }
     } 
+
+
     return true;
 }
 
@@ -302,9 +301,9 @@ bool Renderer::LoadLightSource(const vector<LightSource>& lights){
     shader_ptr_->SetLights(lights);
     return true;
 }
-bool Renderer::LoadSpheres(const vector<Sphere>& spheres){
-    for(const Sphere& sphere : spheres){
-        spheres_.push_back(sphere);
+bool Renderer::LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs){
+    for(const shared_ptr<Hitable>& obj_ptr : obj_ptrs){
+        hitable_list.AddObjectPtr(obj_ptr);
     }
     return true;
 }

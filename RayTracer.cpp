@@ -5,11 +5,12 @@ using namespace LemonCube;
 
 int main(){
     Renderer renderer(500, 500, Vec3f(0.0f, 0.0f, 0.0f));
-    Vec3f eye_pos(0.0f, 0.0f, -6.0f);
-    vector<Sphere> spheres{
-        {Vec3f(0.0f, 0.0f, 1.0f), 1.0f}
+    Vec3f eye_pos(0.0f, 5.0f, -6.0f);
+    vector<shared_ptr<Hitable>> obj_ptr{
+        make_shared<Sphere>(Vec3f(0.0f, 5.0f, 2.0f), 1.0f),
+        make_shared<Sphere>(Vec3f(0.0f, -100.0f, 0.0f), 100.0f)
     };
-    renderer.LoadSpheres(spheres);
+    renderer.LoadObjectPtr(obj_ptr);
 
     float theta = 0.0f;
     float theta_per_second = 0.03f;

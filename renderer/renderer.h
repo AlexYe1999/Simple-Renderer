@@ -32,7 +32,7 @@ public:
     bool RayTracing();
 
 public:
-    void MSAA(const bool& is_open){is_MSAA_open_ = is_open;}
+    void MSAA(const bool& is_open, const unsigned int sample_rate = 1){is_MSAA_open_ = is_open; sample_rate_ = sample_rate;}
     void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
     bool RenderModelVerties(const bool& is_render_verties){is_render_verties_ = is_render_verties; return true;}
     bool RenderModelEdges(const bool& is_render_edges){ is_render_edges_ = is_render_edges;return true;}
@@ -64,10 +64,10 @@ public:
     bool RenderTriangles(const Triangle& triangle);
 
 private:
-    Vec3f BarycentricInterpolation(const array<Vec3f, 3>& vertex, const Vec2f& pixel);
     void FindBoundingBox(const array<Vec3f, 3>& vertices,  Vec2f bbox[2]);
     bool IsInsideTriangle(const array<Vec3f, 3>& vertices, const Vec2f& pixel);
-
+    inline Vec3f BarycentricInterpolation(const array<Vec3f, 3>& vertex, const Vec2f& pixel);
+    inline Vec3f GetRayVector(const float& x, const float& y);
 private:
     const  double time_per_tick_;
     bool is_clock_running_;
@@ -89,9 +89,12 @@ private:
     bool is_render_edges_;
     bool is_render_normals_;
     bool is_render_models_;
+
 private:
     float eye_fov_;
     float aspect_ratio_;
+    float view_port_width_half_;
+    float view_port_height_half_;
     float z_near_;
     float z_far_;
     Vec3f eye_pos_;
@@ -108,7 +111,9 @@ private:
     IShader* shader_ptr_;
 
 private:
-    HitableList hitable_list;
+    unsigned int sample_rate_;
+    HitableList hitable_list_;
+    Matrix3f view_port_cord_;
 
 };
 

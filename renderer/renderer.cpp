@@ -1,4 +1,5 @@
 #include"renderer.h"
+#include<cstdlib>
 namespace LemonCube{
 
 Renderer::Renderer(const unsigned int& width, const unsigned int& height, const Vec3f& background_color)
@@ -22,6 +23,8 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     is_render_models_(false),
     eye_fov_(0.0f),
     aspect_ratio_(canvas_width_ / canvas_height_),
+    view_port_width_half_(0.0f),
+    view_port_height_half_(0.0f),
     z_near_(0.0f),
     z_far_(0.0f),
     model_matrix_(),
@@ -29,9 +32,10 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     projection_matrix_(),
     lights_(),
     textures_ptrs_(),
+    sample_rate_(1),
     shader_ptr_(nullptr),
-    hitable_list()
-{
+    hitable_list_(),
+    view_port_cord_(){
     frame_buffer_ = new Vec3f[width * height];
     z_buffer_ = new float[width * height];
     shader_ptr_ = new IShader;
@@ -102,8 +106,7 @@ void Renderer::SaveImage(const std::string& filename){
     cout<<"\nPush 's to save image or push 'q' to quit\n";
     char k = cin.get();
     if(k == 's'){
-        cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
-        cv::cvtColor(image, image, cv::COLOR_RGB2BGR);            
+        cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);         
         cv::imshow("Rendering", image);
         if(imwrite(filename, image*255.0f)){
             cout<<"Save the image sucessfully\n";
@@ -207,28 +210,37 @@ bool Renderer::Rendering(){
 bool Renderer::RayTracing(){
     Vec3f white(1.0f, 1.0f, 1.0f);
     Vec3f blue(0.5f, 0.7f, 1.0f);
-    Matrix3f cord(model_matrix_.toMatrix3().transposed());
     Ray ray(eye_pos_, eye_pos_.normalized()*-1.0f);
     HitPointInfo info;
-    float theta = eye_fov_ * 3.1415926535898f / 360.0f;
-    float height = atan(theta) * z_near_;
-    float width = height * aspect_ratio_;
-    for(int  i = 0; i < canvas_height_; i++){
-        for(int j = 0; j < canvas_width_; j++){
-            ray.direction = cord[0] * (j * 2.0f / canvas_width_ - 1.0f) * width
-                        + cord[1] * (i * 2.0f / canvas_height_ - 1.0f) * height
-                        + cord[2] * z_near_;
-            ray.direction = ray.direction.normalized();
-            if(hitable_list.HitObject(ray, 0, 1e6, info)){
-                SetPixel(Vec2i(j, i+1), (info.normal + Vec3f(1.0f,1.0f,1.0f) * 0.5f));
+
+    for(int  y = 0; y < canvas_height_; y++){
+        for(int x = 0; x < canvas_width_; x++){
+            if(!is_MSAA_open_){
+                ray.direction = GetRayVector(x, y);
+                if(hitable_list_.HitObject(ray, 0, 1e6, info)){
+                    SetPixel(Vec2i(x, y+1), (info.normal + Vec3f(1.0f,1.0f,1.0f) * 0.5f));
+                }
+                else{
+                    SetPixel(Vec2i(x, y+1), white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f));                
+                }                
             }
             else{
-                SetPixel(Vec2i(j, i+1), white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f));                
+                Vec3f pixel_color(0.0f,0.0f,0.0f);                
+                for(unsigned int i = 0; i < sample_rate_; i++){
+                    ray.direction = GetRayVector(x+(rand()%100)*0.01f, y+(rand()%100)*0.01f);
+                    if(hitable_list_.HitObject(ray, 0, 1e6, info)){
+                        pixel_color += (info.normal + Vec3f(1.0f,1.0f,1.0f) * 0.5f);
+                    }
+                    else{
+                        pixel_color +=  white * (0.5f - ray.direction.y*0.5) + blue * (0.5f + ray.direction.y *0.5f);                
+                    }              
+                }
+                SetPixel(Vec2i(x, y+1), pixel_color/sample_rate_);                
             }
+
                 
         }
     } 
-
 
     return true;
 }
@@ -303,7 +315,7 @@ bool Renderer::LoadLightSource(const vector<LightSource>& lights){
 }
 bool Renderer::LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs){
     for(const shared_ptr<Hitable>& obj_ptr : obj_ptrs){
-        hitable_list.AddObjectPtr(obj_ptr);
+        hitable_list_.AddObjectPtr(obj_ptr);
     }
     return true;
 }
@@ -313,7 +325,9 @@ bool Renderer::MvpTransforme(){
     for(int i = 0; i <  z_buffer_size; i++){
         z_buffer_[i] = z_far_;
     };
-    eye_pos_ = eye_pos_ * model_matrix_.toMatrix3();
+    view_port_cord_ = model_matrix_.toMatrix3();
+    eye_pos_ = eye_pos_ * view_port_cord_;
+    view_port_cord_ = view_port_cord_.transposed();
     shader_ptr_->SetEyePosition(eye_pos_);
 
     float f1 = (z_far_ - z_near_) * 0.5f;
@@ -371,22 +385,23 @@ void Renderer::SetProjectionMatrix(const float& eye_fov,const float& aspect_rati
     z_near_ = zNear;
     z_far_ = zFar;
     float theta = eye_fov * 3.1415926535898f / 360.0f;
-    float top = atan(theta) * zNear;
-    float bottom = -top;
-    float right = top * aspect_ratio_;
-    float left = -right;
+    view_port_height_half_ = atan(theta) * zNear;
+    view_port_width_half_ = view_port_height_half_ * aspect_ratio_;  
+    float left = -view_port_width_half_;      
+    float bottom = -view_port_height_half_;
+
     Matrix4f otho1 = {
-        {1.0f,                      0.0f,                       0.0f,                   0.0f},
-        {0.0f,                      1.0f,                       0.0f,                   0.0f},
-        {0.0f,                      0.0f,                       1.0f,                   0.0f},
-        {(left + right) * -0.5f,    (top + bottom) * -0.5f,     (zNear + zFar) * -0.5f, 1.0f}
+        {1.0f,                                      0.0f,                                       0.0f,                   0.0f},
+        {0.0f,                                      1.0f,                                       0.0f,                   0.0f},
+        {0.0f,                                      0.0f,                                       1.0f,                   0.0f},
+        {(left + view_port_width_half_) * -0.5f,    (view_port_height_half_ + bottom) * -0.5f,  (zNear + zFar) * -0.5f, 1.0f}
     };
 
     Matrix4f otho2 = {
-        {2.0f/(right-left), 0,                 0,                   0},
-        {0,                 2.0f/(top-bottom), 0,                   0},
-        {0,                 0,                 2.0f/(zFar-zNear),   0},
-        {0,                 0,                 0,                   1}
+        {2.0f/(view_port_width_half_-left), 0,                                      0,                   0},
+        {0,                                 2.0f/(view_port_height_half_-bottom),   0,                   0},
+        {0,                                 0,                                      2.0f/(zFar-zNear),   0},
+        {0,                                 0,                                      0,                   1}
     };
 
     Matrix4f perspective = {
@@ -549,17 +564,6 @@ bool Renderer::RenderTriangles(const Triangle& triangle){
     return true;
 }
 
-Vec3f Renderer::BarycentricInterpolation(const array<Vec3f,3>& vertex,  const Vec2f& pixel){
-    Vec2f v0(vertex[0].x, vertex[0].y);
-    Vec2f v1(vertex[1].x, vertex[1].y);
-    Vec2f v2(vertex[2].x, vertex[2].y);
-    float area = 1.0f / (v0-v1).cross(v2 - v1);
-    float alpha = (pixel-v1).cross(v2-v1) * area;
-    float beta = (pixel-v2).cross(v0-v2) * area;
-    float gamma = (pixel-v0).cross(v1-v0) * area;
-    return Vec3f(alpha, beta, gamma); 
-}
-
 void Renderer::FindBoundingBox(const array<Vec3f,3>& vertex, Vec2f bbox[2]){
     bbox[0].x = vertex[2].x;
     bbox[0].y = vertex[2].y;
@@ -607,6 +611,21 @@ bool Renderer::IsInsideTriangle(const array<Vec3f, 3>& vertex, const Vec2f& pixe
     return false;
 }
 
+Vec3f Renderer::BarycentricInterpolation(const array<Vec3f,3>& vertex,  const Vec2f& pixel){
+    Vec2f v0(vertex[0].x, vertex[0].y);
+    Vec2f v1(vertex[1].x, vertex[1].y);
+    Vec2f v2(vertex[2].x, vertex[2].y);
+    float area = 1.0f / (v0-v1).cross(v2 - v1);
+    float alpha = (pixel-v1).cross(v2-v1) * area;
+    float beta = (pixel-v2).cross(v0-v2) * area;
+    float gamma = (pixel-v0).cross(v1-v0) * area;
+    return Vec3f(alpha, beta, gamma); 
+}
 
+Vec3f Renderer::GetRayVector(const float& x, const float& y){
+    return view_port_cord_[0] * (x * 2.0f / canvas_width_ - 1.0f) * view_port_width_half_
+         + view_port_cord_[1] * (y * 2.0f / canvas_height_ - 1.0f) * view_port_height_half_
+         + view_port_cord_[2] * z_near_;
+}
 
 }

@@ -19,10 +19,11 @@ Vec3f Ray::at(const float t) const{
 Hitable::Hitable(const Vec3f& _position) : Object(_position){}
 Hitable::~Hitable(){}
 
-Sphere::Sphere(const Vec3f& _position, const float& _radius)
+Sphere::Sphere(const Vec3f& _position, const float& _radius,const shared_ptr<Material>& _material_ptr)
     : 
     Hitable(_position),
-    radius(_radius)
+    radius(_radius),
+    material_ptr(_material_ptr)
 {}
 Sphere::~Sphere(){}
 
@@ -41,6 +42,7 @@ bool Sphere::HitObject(const Ray& ray, const float& t_min, const float& t_max, H
         }
     }
     info.time = t;
+    info.material_ptr = material_ptr;
     info.hit_point = ray.at(t);
     info.SetReflectNormal(ray, (info.hit_point - position) / radius);
     return true;

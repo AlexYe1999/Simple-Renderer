@@ -13,6 +13,7 @@ add_subdirectory(shader)
 add_subdirectory(texture)
 add_subdirectory(object)
 add_subdirectory(hitable_list)
+add_subdirectory(material)
 
 set(STATIC_LIB 
     Renderer
@@ -22,6 +23,7 @@ set(STATIC_LIB
     Texture
     Object
     Hitable_List
+    Material
 )
 
 #add_executable(Rendering main.cpp)

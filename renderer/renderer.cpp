@@ -89,7 +89,7 @@ void Renderer::GetTimeCost(){
             StopClock();
             StartClock();
     }
-    cout<<"time cost: "<<duration_ * time_per_tick_ *1000 <<" ms\n";
+    cout<<"time cost: --"<<duration_ * time_per_tick_ *1000 <<" ms  --" << duration_ * time_per_tick_<<" s\n";
 }
 
 void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms){
@@ -207,19 +207,19 @@ bool Renderer::Rendering(){
     return true;
 }
 
-bool Renderer::RayTracing(const unsigned int& bounding_times){
+bool Renderer::RayTracing(const unsigned int& bounce_times){
     Ray ray(eye_pos_, eye_pos_.normalized()*-1.0f);
     for(int  y = 0; y < canvas_height_; y++){
         for(int x = 0; x < canvas_width_; x++){
             if(!is_MSAA_open_){
                 ray.direction = GetRayVector(x, y);
-                SetPixel(x, y+1, GetRayColor(ray, bounding_times));
+                SetPixel(x, y+1, GetRayColor(ray, bounce_times));
             }
             else{
                 Vec3f pixel_color(0.0f,0.0f,0.0f);                
                 for(unsigned int i = 0; i < sample_rate_; i++){
                     ray.direction = GetRayVector(x+(rand()%100)*0.01f, y+(rand()%100)*0.01f);
-                    pixel_color += GetRayColor(ray, bounding_times);
+                    pixel_color += GetRayColor(ray, bounce_times);
                 }             
                 SetPixel(x, y+1, pixel_color / sample_rate_);                
             }
@@ -618,8 +618,10 @@ Vec3f Renderer::GetRayColor(const Ray& ray, const unsigned int step){
         return Vec3f(0.0f, 0.0f, 0.0f);
     }
     if(hitable_list_.HitObject(ray, 0.001f, 1e6, info)){
-        Vec3f rand_vector = Vec3<float>::RandomInSphere(1.0f);
-        return GetRayColor(Ray(info.hit_point, info.normal+info.hit_point+rand_vector-info.hit_point), step-1) * 0.5f;
+        Ray scattered(info.hit_point);
+        Vec3f attenuation;
+        info.material_ptr->Scatter(ray, info, attenuation, scattered);
+        return GetRayColor(scattered, step-1).cwiseProduct(attenuation);
     }
     int t = ray.direction.y*0.5;
     return Vec3f(1.0f, 1.0f, 1.0f)*(0.5f - t) + Vec3f(0.5f, 0.7f, 1.0f)*(0.5f + t);

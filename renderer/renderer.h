@@ -29,7 +29,7 @@ public:
 
 public:
     bool Rendering();
-    bool RayTracing(const unsigned int& bounding_times = 20);
+    bool RayTracing(const unsigned int& bounce_times = 20);
 
 public:
     void MSAA(const bool& is_open, const unsigned int sample_rate = 1){is_MSAA_open_ = is_open; sample_rate_ = sample_rate;}

@@ -45,8 +45,12 @@ struct Vec3{
             T x = (rand() / (RAND_MAX + 1.0f) - 0.5f) * diameter;
             T y = (rand() / (RAND_MAX + 1.0f) - 0.5f) * diameter; 
             T z = (rand() / (RAND_MAX + 1.0f) - 0.5f) * diameter;  
-            if(x*x + y*y + z*z < 1.0f) return Vec3<T>(x, y, z);
+            if(x*x + y*y + z*z < diameter * 0.5) return Vec3<T>(x, y, z);
         }
+    }
+    static inline Vec3<T> RandomInSphere(){
+        float bias = RAND_MAX * 0.5f;
+        return Vec3<T>(rand()-bias, rand()-bias, rand()-bias);
     }
     inline Vec3<T> operator +(const Vec3<T>& vec) const { return Vec3<T>(x + vec.x, y + vec.y, z + vec.z);}
     inline Vec3<T> operator -(const Vec3<T>& vec) const {return Vec3<T>(x - vec.x, y - vec.y, z - vec.z);}

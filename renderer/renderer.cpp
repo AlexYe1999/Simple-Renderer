@@ -103,11 +103,13 @@ void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms)
 }
 
 void Renderer::SaveImage(const std::string& filename){
+    cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
+    cv::cvtColor(image, image, CV_RGB2BGR);
+    cv::imshow("Rendering", image);
+    cv::waitKey(3);      
     cout<<"\nPush 's to save image or push 'q' to quit\n";
     char k = cin.get();
     if(k == 's'){
-        cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);         
-        cv::imshow("Rendering", image);
         if(imwrite(filename, image*255.0f)){
             cout<<"Save the image sucessfully\n";
         }
@@ -116,7 +118,7 @@ void Renderer::SaveImage(const std::string& filename){
         }
     }
     else{
-            cout<<"quit\n";
+        cout<<"quit\n";
     }
 }
 

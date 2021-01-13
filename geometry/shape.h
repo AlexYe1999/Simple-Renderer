@@ -3,6 +3,7 @@
 #include"../texture/texture.h"
 #include"geometry.h"
 #include<array>
+#include<memory>
 namespace LemonCube{
 
 class Shape{
@@ -33,7 +34,7 @@ public:
 
 class Triangle : public Shape{
 public:
-    Triangle(Texture* texture = nullptr):vertices_world(),vertices_camera(),colors(),normals(),texture_coords(),texture_ptr(texture){};
+    Triangle(shared_ptr<Texture> texture = nullptr):vertices_world(),vertices_camera(),colors(),normals(),texture_coords(),texture_ptr(texture){};
     ~Triangle(){};
 
 public:
@@ -42,7 +43,7 @@ public:
     std::array<Vec3f, 3> normals;
     std::array<Vec3f, 3> colors;
     std::array<Vec2f, 3> texture_coords;
-    Texture* texture_ptr;
+    shared_ptr<Texture> texture_ptr;
 };
 
 

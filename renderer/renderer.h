@@ -109,7 +109,6 @@ private:
     vector<Line> lines_;
     vector<Triangle> triangles_;
     vector<LightSource> lights_;
-    vector<Texture*> textures_ptrs_;
     IShader* shader_ptr_;
 
 private:

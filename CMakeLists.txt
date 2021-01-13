@@ -26,7 +26,7 @@ set(STATIC_LIB
     Material
 )
 
-#add_executable(Rendering main.cpp)
-#target_link_libraries(Rendering ${STATIC_LIB})
-add_executable(RayTracer RayTracer.cpp)
-target_link_libraries(RayTracer ${STATIC_LIB})
+add_executable(Rendering main.cpp)
+target_link_libraries(Rendering ${STATIC_LIB})
+#add_executable(RayTracer RayTracer.cpp)
+#target_link_libraries(RayTracer ${STATIC_LIB})

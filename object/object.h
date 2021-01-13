@@ -30,12 +30,14 @@ public:
 };
 
 struct HitPointInfo{
+    bool hit_on_face;
     float time; 
     shared_ptr<Material> material_ptr;
     Vec3f hit_point;
     Vec3f normal;
     inline void SetReflectNormal(const Ray& _ray, const Vec3f& _normal){
-        normal = _normal * _ray.direction < 0.0f ? _normal : _normal * -1.0f;
+        hit_on_face = _normal * _ray.direction < 0.0f;
+        normal = hit_on_face ? _normal : _normal * -1.0f;
     }
 };
 class Hitable : public Object{

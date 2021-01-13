@@ -31,7 +31,6 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     view_matrix_(),
     projection_matrix_(),
     lights_(),
-    textures_ptrs_(),
     sample_rate_(1),
     shader_ptr_(nullptr),
     hitable_list_(),
@@ -49,12 +48,6 @@ Renderer::~Renderer(){
     if(z_buffer_ != nullptr){
         delete[] z_buffer_;
         z_buffer_ = nullptr;
-    }
-    unsigned int texture_num = textures_ptrs_.size();
-    for(int i = 0; i < texture_num; i++){
-        if(textures_ptrs_[i] != nullptr){
-            delete textures_ptrs_[i];
-        }
     }
     if(shader_ptr_ != nullptr){
         delete shader_ptr_;
@@ -246,32 +239,25 @@ bool Renderer::SetShader(IShader*& shader){
 bool Renderer::LoadModel(const string& filename, const string& texture_name = ""){
 
     Model* model_ptr = new Model(filename);
-    Texture* texture_ptr = new Texture(texture_name);
-    if(texture_ptr->IsValid()){
-        textures_ptrs_.push_back(texture_ptr);
-    }
-    else{
-        delete texture_ptr;
-        texture_ptr = nullptr;
-    }
-
-    int surface_size = model_ptr->GetSurfeceSize();
-    Triangle triangle(texture_ptr);
-    for(unsigned int index = 0; index < surface_size; index++){
-        array<Vec3i, 3> indexes = model_ptr->GetSurfece(index);//v uv nor
-        for(int i = 0; i < 3; i++){
-            triangle.vertices_world[i] = model_ptr->GetVertex(indexes[i].vertex);
-            triangle.normals[i] = model_ptr->GetNormal(indexes[i].normal);            
-            triangle.texture_coords[i] = model_ptr->GetTexture(indexes[i].uv);
-        }
-        triangles_.push_back(triangle);
-    }
-
     if(model_ptr != nullptr){
+        int surface_size = model_ptr->GetSurfeceSize();
+        Triangle triangle(make_shared<Texture>(texture_name));
+        for(unsigned int index = 0; index < surface_size; index++){
+            array<Vec3i, 3> indexes = model_ptr->GetSurfece(index);//v uv nor
+            for(int i = 0; i < 3; i++){
+                triangle.vertices_world[i] = model_ptr->GetVertex(indexes[i].vertex);
+                triangle.normals[i] = model_ptr->GetNormal(indexes[i].normal);            
+                triangle.texture_coords[i] = model_ptr->GetTexture(indexes[i].uv);
+            }
+            triangles_.push_back(triangle);
+        }
+
         delete model_ptr;
-        model_ptr = nullptr;
+        model_ptr = nullptr;    
+        return true;
     }
-    return true;
+
+    return false;
 }
 
 bool Renderer::LoadPoint(const Point& point){

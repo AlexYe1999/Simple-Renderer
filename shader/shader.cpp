@@ -12,21 +12,21 @@ bool IShader::SetLights(const vector<LightSource>& lights){
     lights_ = lights;
     return true;
 }
-void IShader::VertexShader(){}
+Vec3f IShader::VertexShader(const Vec3f& vector){return Vec3f(0.0f,0.0f,0.0f);};
 Vec3f IShader::FragmentShader(const FragmentShaderPayload& payload){
-    return Vec3f(0.5f, 0.5f, 0.5f);
+    return payload.color;
 }
 
 NormalShader::NormalShader() : IShader(){}
 NormalShader::~NormalShader(){}
-void NormalShader::VertexShader(){}
+Vec3f NormalShader::VertexShader(const Vec3f& vector){return Vec3f(0.0f,0.0f,0.0f);}
 Vec3f NormalShader::FragmentShader(const FragmentShaderPayload& payload){
     return ((payload.normal+Vec3f(1.0f,1.0f,1.0f))*0.5f).normalized();
 }
 
 PhongShader::PhongShader()  : IShader(){}
 PhongShader::~PhongShader(){}
-void PhongShader::VertexShader(){}
+Vec3f PhongShader::VertexShader(const Vec3f& vector){return Vec3f(0.0f,0.0f,0.0f);}
 Vec3f PhongShader::FragmentShader(const FragmentShaderPayload& payload){
     const float p = 150;
     Vec3f dst_color(0.0f, 0.0f, 0.0f);
@@ -49,7 +49,7 @@ Vec3f PhongShader::FragmentShader(const FragmentShaderPayload& payload){
 
 TextureShader::TextureShader() : IShader(){}
 TextureShader::~TextureShader(){}
-void TextureShader::VertexShader(){}
+Vec3f TextureShader::VertexShader(const Vec3f& vector){return Vec3f(0.0f,0.0f,0.0f);}
 Vec3f TextureShader::FragmentShader(const FragmentShaderPayload& payload){
     const float p = 150;
     Vec3f dst_color(0.0f, 0.0f, 0.0f);
@@ -72,14 +72,15 @@ Vec3f TextureShader::FragmentShader(const FragmentShaderPayload& payload){
 
 BumpShader::BumpShader() : IShader(){}
 BumpShader::~BumpShader(){}
-void BumpShader::VertexShader(){};
+Vec3f BumpShader::VertexShader(const Vec3f& vector){return Vec3f(0.0f,0.0f,0.0f);};
 Vec3f BumpShader::FragmentShader(const FragmentShaderPayload& payload){
-
+    float k = 0.5f;
+    return payload.normal + payload.texture * k; 
 }
 
 DisplacementShader::DisplacementShader() : IShader(){}
 DisplacementShader::~DisplacementShader(){}
-void DisplacementShader::VertexShader(){};
+Vec3f DisplacementShader::VertexShader(const Vec3f& vector){return Vec3f(0.0f,0.0f,0.0f);};
 Vec3f DisplacementShader::FragmentShader(const FragmentShaderPayload& payload){
 
 }

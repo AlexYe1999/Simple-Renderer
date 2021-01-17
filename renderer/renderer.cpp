@@ -25,19 +25,18 @@ Renderer::Renderer(const unsigned int& width, const unsigned int& height, const 
     aspect_ratio_(canvas_width_ / canvas_height_),
     view_port_width_half_(0.0f),
     view_port_height_half_(0.0f),
-    z_near_(0.0f),
-    z_far_(0.0f),
+    z_near_(-1.0f),
+    z_far_(500.0f),
     model_matrix_(),
     view_matrix_(),
     projection_matrix_(),
     lights_(),
+    shader_ptr_(make_shared<IShader>()),
     sample_rate_(1),
-    shader_ptr_(nullptr),
     hitable_list_(),
     view_port_cord_(){
     frame_buffer_ = new Vec3f[width * height];
     z_buffer_ = new float[width * height];
-    shader_ptr_ = new IShader;
 }
 
 Renderer::~Renderer(){
@@ -48,10 +47,6 @@ Renderer::~Renderer(){
     if(z_buffer_ != nullptr){
         delete[] z_buffer_;
         z_buffer_ = nullptr;
-    }
-    if(shader_ptr_ != nullptr){
-        delete shader_ptr_;
-        shader_ptr_ = nullptr;
     }
 }
 
@@ -116,16 +111,18 @@ void Renderer::SaveImage(const std::string& filename){
 }
 
 void Renderer::ClearCanvas(){
-    for(int i = 0;i < canvas_width_ * canvas_height_; i++){
+    unsigned int z_buffer_size = canvas_width_ * canvas_height_;    
+    for(int i = 0;i < z_buffer_size; i++){
         frame_buffer_[i] = background_color_;
+        z_buffer_[i] = z_far_;
     }
+
 }
 
 bool Renderer::Rendering(){
-    cout<<"Rendering model ...\n";
-    
+
     unsigned int lines_num = lines_.size();
-    for(unsigned int index = 0; index < lines_num;index++){
+    for(unsigned int index = 0; index < lines_num; index++){
         Line line = lines_[index];
         DrawLine(line.vertices[0], line.vertices[1], line.colors[0], line.colors[1]);
     }
@@ -224,11 +221,9 @@ bool Renderer::RayTracing(const unsigned int& bounce_times){
     return true;
 }
 
-bool Renderer::SetShader(IShader*& shader){
-    if(shader == nullptr) return false;
-    if(shader_ptr_ != nullptr){
-        delete shader_ptr_;
-        shader_ptr_ = shader;
+bool Renderer::SetShader(const shared_ptr<IShader>& shader){
+    if(shader == nullptr){
+        return false;        
     }
     else{
         shader_ptr_ = shader;
@@ -238,26 +233,19 @@ bool Renderer::SetShader(IShader*& shader){
 
 bool Renderer::LoadModel(const string& filename, const string& texture_name = ""){
 
-    Model* model_ptr = new Model(filename);
-    if(model_ptr != nullptr){
-        int surface_size = model_ptr->GetSurfeceSize();
-        Triangle triangle(make_shared<Texture>(texture_name));
-        for(unsigned int index = 0; index < surface_size; index++){
-            array<Vec3i, 3> indexes = model_ptr->GetSurfece(index);//v uv nor
-            for(int i = 0; i < 3; i++){
-                triangle.vertices_world[i] = model_ptr->GetVertex(indexes[i].vertex);
-                triangle.normals[i] = model_ptr->GetNormal(indexes[i].normal);            
-                triangle.texture_coords[i] = model_ptr->GetTexture(indexes[i].uv);
-            }
-            triangles_.push_back(triangle);
+    shared_ptr<Model> model_ptr = make_shared<Model>(filename);
+    int surface_size = model_ptr->GetSurfeceSize();
+    Triangle triangle(make_shared<Texture>(texture_name));
+    for(unsigned int index = 0; index < surface_size; index++){
+        array<Vec3i, 3> indexes = model_ptr->GetSurfece(index);//v uv nor
+        for(int i = 0; i < 3; i++){
+            triangle.vertices_world[i] = model_ptr->GetVertex(indexes[i].vertex);
+            triangle.normals[i] = model_ptr->GetNormal(indexes[i].normal);            
+            triangle.texture_coords[i] = model_ptr->GetTexture(indexes[i].uv);
         }
-
-        delete model_ptr;
-        model_ptr = nullptr;    
-        return true;
-    }
-
-    return false;
+        triangles_.push_back(triangle);
+    }   
+    return true;
 }
 
 bool Renderer::LoadPoint(const Point& point){
@@ -280,6 +268,38 @@ bool Renderer::LoadLine(const vector<Line>& lines){
     }
     return true;
 }
+bool Renderer::ClearLine(){
+    lines_.clear();
+    return true;
+}
+
+bool Renderer::LoadTriangle(const Triangle& triangle){
+    triangles_.push_back(triangle);
+    return true;
+}    
+bool Renderer::LoadTriangle(const vector<Triangle>& triangles){
+    for(const Triangle& triangle : triangles){
+        triangles_.push_back(triangle);
+    }
+    return true;
+}
+
+bool Renderer::LoadRectangle(const array<Vec3f,4>& vertices, const array<Vec3f,4>& normals){
+    Triangle triangle;
+    for(int i = 0; i < 3; i += 2){
+        for(int j = 0; j < 3; j++){
+            triangle.vertices_world[j] = vertices[(i+j)%4];
+            triangle.normals[j] = normals[(i+j)%4];
+        }        
+        triangles_.push_back(triangle);
+    }
+    return true;
+}
+
+bool Renderer::LoadRectangle(const vector<array<Vec3f,4>>& rectangles){
+    return true;
+}
+
 
 bool Renderer::LoadLightSource(const vector<LightSource>& lights){
     shader_ptr_->SetLights(lights);
@@ -293,10 +313,6 @@ bool Renderer::LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs){
 }
 
 bool Renderer::MvpTransforme(){
-    unsigned int z_buffer_size = canvas_width_ * canvas_height_;
-    for(int i = 0; i <  z_buffer_size; i++){
-        z_buffer_[i] = z_far_;
-    };
     view_port_cord_ = model_matrix_.toMatrix3();
     eye_pos_ = eye_pos_ * view_port_cord_;
     view_port_cord_ = view_port_cord_.transposed();
@@ -483,52 +499,39 @@ bool Renderer::RenderTriangles(const Triangle& triangle){
     FindBoundingBox(vertex, bbox);
     int max_x = static_cast<int>(bbox[1].x)+1;
     int max_y = static_cast<int>(bbox[1].y)+1;
-    if(!is_MSAA_open_){
-        for(int y = bbox[0].y; y < max_y; y++){
-            for(int x = bbox[0].x; x < max_x; x++){
-                if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
-                    Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5f, y+0.5f));
-                    float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
-                    if(pixel_z > 0.0f && pixel_z < z_buffer_[y * canvas_width_+ x]){
-                        z_buffer_[y*canvas_width_+x] = pixel_z;
-                        Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
-                        Vec3f pos(triangle.vertices_world[0] * barycentric.x + triangle.vertices_world[1] * barycentric.y + triangle.vertices_world[2] * barycentric.z);
-                        Vec3f normal(normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z);
-                        Vec3f texture(triangle.texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y));
-                        Vec3f color(1.0f, 1.0f, 1.0f);
-                        FragmentShaderPayload payload(pos, color, normal, texture);
-                        color = shader_ptr_->FragmentShader(payload);
-                        SetPixel(x, y, color);
-                    }
-                }
-            }
-        }
-    }
-    else{
-        for(int y = bbox[0].y; y < max_y; y++){
-            for(int x = bbox[0].x; x < max_x; x++){
-                float weight = 0.0f;
+    for(int y = bbox[0].y; y < max_y; y++){
+        for(int x = bbox[0].x; x < max_x; x++){
+            float weight = 1.0f;
+            if(is_MSAA_open_){
                 float offset[2] = {0.25, 0.75f};
                 for(int i = 0; i < 2; i++){
                     for(int j = 0 ; j < 2; j++){
-                        Vec2f pixel(x+offset[i], y+offset[j]);
-                        if(IsInsideTriangle(vertex, pixel)){
-                            weight += 0.25f;
+                        if(!IsInsideTriangle(vertex, Vec2f(x+offset[i], y+offset[j]))){
+                            weight -= 0.25f;
                         }
                     }
                 }
-                if(weight < 0.2f) continue;
-                Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5, y+0.5));
+            }
+            else{
+                if(!IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
+                    weight = 0.0f;
+                }
+            }
+            if(weight > 0.2f){
+                Vec3f barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5f, y+0.5f));
                 float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
-                if(pixel_z < z_buffer_[y * canvas_width_+ x]){
-                    if(pixel_z > 0.9f) z_buffer_[y*canvas_width_+x] = pixel_z;
+                pixel_z = pixel_z * weight + (1.0f - weight) * z_far_;
+                if(pixel_z > 0.0f && pixel_z < z_buffer_[y * canvas_width_+ x]){
+                    z_buffer_[y*canvas_width_+x] = pixel_z;
                     Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
-                    Vec3f normal = normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z;
-                    Vec3f texture = triangle.texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y);
+                    Vec3f pos(triangle.vertices_world[0] * barycentric.x + triangle.vertices_world[1] * barycentric.y + triangle.vertices_world[2] * barycentric.z);
+                    Vec3f normal(normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z);
+                    Vec3f texture = triangle.texture_ptr == nullptr ? Vec3f(1.0f, 1.0f, 1.0f) 
+                                    : triangle.texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y);
                     Vec3f color(1.0f, 1.0f, 1.0f);
-                    FragmentShaderPayload payload(Vec3f(x, y, pixel_z), color, normal.normalized(), texture);
-                    color = shader_ptr_->FragmentShader(payload) * weight;
-                    SetPixel(x, y, color);
+                    FragmentShaderPayload payload(pos, color, normal, texture);
+                    color = shader_ptr_->FragmentShader(payload);
+                    SetPixel(x, y, color * weight);
                 }
             }
         }

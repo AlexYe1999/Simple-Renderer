@@ -40,7 +40,7 @@ public:
     bool RenderModel(const bool& is_render_models){is_render_models_ = is_render_models;return true;}
 
 public:
-    bool SetShader(IShader*& shader);
+    bool SetShader(const shared_ptr<IShader>& shader);
 
 public:
     bool LoadModel(const string& filename, const string& texture_name);
@@ -48,6 +48,11 @@ public:
     bool LoadPoint(const vector<Point>& points);
     bool LoadLine(const Line& line);
     bool LoadLine(const vector<Line>& lines);
+    bool ClearLine();
+    bool LoadTriangle(const Triangle& Triangle);    
+    bool LoadTriangle(const vector<Triangle>& Triangles);
+    bool LoadRectangle(const array<Vec3f,4>& vertices, const array<Vec3f,4>& normals);
+    bool LoadRectangle(const vector<array<Vec3f,4>>& rectangles);
     bool LoadLightSource(const vector<LightSource>& lights);
     bool LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs);
 
@@ -109,7 +114,7 @@ private:
     vector<Line> lines_;
     vector<Triangle> triangles_;
     vector<LightSource> lights_;
-    IShader* shader_ptr_;
+    shared_ptr<IShader> shader_ptr_;
 
 private:
     unsigned int sample_rate_;

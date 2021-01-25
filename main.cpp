@@ -56,7 +56,7 @@ int main(int argc, char* argv[]){
         renderer.SetViewMatrix(eye_pos);
         renderer.SetProjectionMatrix(90.0f, 1.0f, 1.0f, 50.0f);   
 
-        renderer.MvpTransforme();
+        renderer.VertexShader();
 
         renderer.Rendering();
 

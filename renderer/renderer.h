@@ -57,7 +57,7 @@ public:
     bool LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs);
 
 public:
-    bool MvpTransforme();
+    bool VertexShader();
     void SetModelMatrix(const float& x_axis, const float& y_axis, const float& z_axis);
     void SetViewMatrix(const Vec3f& eye_pos);
     void SetProjectionMatrix(const float& eye_fov, const float& aspect_ratio, const float& zNear, const float& zFar);

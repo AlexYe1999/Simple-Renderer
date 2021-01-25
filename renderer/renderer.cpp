@@ -312,7 +312,7 @@ bool Renderer::LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs){
     return true;
 }
 
-bool Renderer::MvpTransforme(){
+bool Renderer::VertexShader(){
     view_port_cord_ = model_matrix_.toMatrix3();
     eye_pos_ = eye_pos_ * view_port_cord_;
     view_port_cord_ = view_port_cord_.transposed();

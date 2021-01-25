@@ -25,7 +25,6 @@ public:
     bool SetLights(const vector<LightSource>& lights);
 
 public:
-    virtual Vec3f VertexShader(const Vec3f& vector);
     virtual Vec3f FragmentShader(const FragmentShaderPayload& payload);
 
 protected:
@@ -39,7 +38,6 @@ public:
     ~NormalShader();
 
 public:
-    Vec3f VertexShader(const Vec3f& vector);
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
 
 };
@@ -51,7 +49,6 @@ public:
     ~PhongShader();
 
 public:
-    Vec3f VertexShader(const Vec3f& vector);
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
 
 };
@@ -62,7 +59,6 @@ public:
     ~TextureShader();
     
 public:
-    Vec3f VertexShader(const Vec3f& vector);
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
 
 };
@@ -73,7 +69,6 @@ public:
     ~BumpShader();
 
 public:
-    Vec3f VertexShader(const Vec3f& vector);
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
 };
 
@@ -83,7 +78,6 @@ public:
     ~DisplacementShader();
 
 public:
-    Vec3f VertexShader(const Vec3f& vector);
     Vec3f FragmentShader(const FragmentShaderPayload& payload);
 };
 

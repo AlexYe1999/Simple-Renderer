@@ -200,6 +200,7 @@ bool Renderer::Rendering(){
 }
 
 bool Renderer::RayTracing(const unsigned int& bounce_times){
+    
     Ray ray(eye_pos_, eye_pos_.normalized()*-1.0f);
     for(int  y = 0; y < canvas_height_; y++){
         for(int x = 0; x < canvas_width_; x++){
@@ -216,6 +217,7 @@ bool Renderer::RayTracing(const unsigned int& bounce_times){
                 SetPixel(x, y+1, pixel_color / sample_rate_);                
             }
         }
+        cout<<"Rendering : "<< y * 100.0f / canvas_height_ <<"% "<< endl ;
     } 
 
     return true;
@@ -608,7 +610,7 @@ Vec3f Renderer::GetRayColor(const Ray& ray, const unsigned int step){
     if(step == 0){
         return Vec3f(0.0f, 0.0f, 0.0f);
     }
-    if(hitable_list_.HitObject(ray, 0.001f, 1e6, info)){
+    if(hitable_list_.HitObject(ray, 0.0001f, 1e6, info)){
         Ray scattered(info.hit_point);
         Vec3f attenuation;
         info.material_ptr->Scatter(ray, info, attenuation, scattered);

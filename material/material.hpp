@@ -41,7 +41,7 @@ public:
 
 class Metal : public Material {
 public:
-    Metal(const Vec3f& _color, const float& _fuzz = 0.1f);
+    Metal(const Vec3f& _color, const float& _fuzz = 0.0f);
     virtual ~Metal();
 public:
     virtual bool Scatter(

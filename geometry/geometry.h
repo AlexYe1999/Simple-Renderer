@@ -63,8 +63,9 @@ struct Vec3{
     inline Vec3<T> operator *(const Matrix3<T>& matrix) const {return Vec3<T>((*this)*matrix.vec[0], (*this)*matrix.vec[1], (*this)*matrix.vec[2]);};
     inline T& operator [](const int& index) {if(index == 0) {return x;}else if(index == 1){ return y;}else{ return z;}}
     inline Vec3<T> cwiseProduct(const Vec3<T>& vec) const {return Vec3<T>(x * vec.x, y * vec.y, z * vec.z);}
-    inline  Vec3<T> cross(const Vec3<T>& vec) const {return Vec3<T>(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);}
-    inline Vec3<T> normalized(){return (*this)/sqrt(x*x + y*y + z*z);}
+    inline Vec3<T> cross(const Vec3<T>& vec) const {return Vec3<T>(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);}
+    inline T length(){return static_cast<T>(sqrt(x*x + y*y + z*z));}
+    inline Vec3<T> normalized(){return (*this)/length();}
     inline Vec4<T> toVec4(const T& w) const { return Vec4<T>(x, y, z, w);}
     inline Vec4<T> toVec4() const{ return Vec4<T>(x, y, z, T(0));}
     inline Vec2<T> toVec2() const{ return Vec2<T>(x, y);}

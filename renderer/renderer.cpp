@@ -143,9 +143,9 @@ bool Renderer::Rendering(){
             Vec3f v1(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
             Vec3f v2(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
             if(triangle.texture_ptr != nullptr){
-                v0 = triangle.texture_ptr->getColor(triangle.texture_coords[0].u, triangle.texture_coords[0].v);  
-                v1 = triangle.texture_ptr->getColor(triangle.texture_coords[1].u, triangle.texture_coords[1].v);
-                v2 = triangle.texture_ptr->getColor(triangle.texture_coords[2].u, triangle.texture_coords[2].v);
+                v0 = triangle.texture_ptr->GetColor(triangle.texture_coords[0].u, triangle.texture_coords[0].v);  
+                v1 = triangle.texture_ptr->GetColor(triangle.texture_coords[1].u, triangle.texture_coords[1].v);
+                v2 = triangle.texture_ptr->GetColor(triangle.texture_coords[2].u, triangle.texture_coords[2].v);
             }
 
             SetPixel(vertex[0].x, vertex[0].y, v0);
@@ -157,8 +157,8 @@ bool Renderer::Rendering(){
                 Vec3f v0(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
                 Vec3f v1(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
                 if(triangle.texture_ptr != nullptr){
-                    v0 = triangle.texture_ptr->getColor(triangle.texture_coords[0].u, triangle.texture_coords[0].v);  
-                    v1 = triangle.texture_ptr->getColor(triangle.texture_coords[1].u, triangle.texture_coords[1].v);
+                    v0 = triangle.texture_ptr->GetColor(triangle.texture_coords[0].u, triangle.texture_coords[0].v);  
+                    v1 = triangle.texture_ptr->GetColor(triangle.texture_coords[1].u, triangle.texture_coords[1].v);
                 }
                 Draw2DLine(Vec2i(vertex[i].x, vertex[i].y), Vec2i(vertex[(i+1)%3].x, vertex[(i+1)%3].y), v0, v1);
                 if(is_showing_rendering){
@@ -528,10 +528,8 @@ bool Renderer::RenderTriangles(const Triangle& triangle){
                     Vec2f uv_interpolated(uv[0] * barycentric.x + uv[1] * barycentric.y + uv[2] * barycentric.z);
                     Vec3f pos(triangle.vertices_world[0] * barycentric.x + triangle.vertices_world[1] * barycentric.y + triangle.vertices_world[2] * barycentric.z);
                     Vec3f normal(normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z);
-                    Vec3f texture = triangle.texture_ptr == nullptr ? Vec3f(1.0f, 1.0f, 1.0f) 
-                                    : triangle.texture_ptr->getColor(uv_interpolated.x, uv_interpolated.y);
                     Vec3f color(1.0f, 1.0f, 1.0f);
-                    FragmentShaderPayload payload(pos, color, normal, texture);
+                    FragmentShaderPayload payload(pos, color, normal, uv_interpolated, triangle.texture_ptr);
                     color = shader_ptr_->FragmentShader(payload);
                     SetPixel(x, y, color * weight);
                 }

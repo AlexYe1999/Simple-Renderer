@@ -6,7 +6,7 @@ using namespace LemonCube;
 void SetProperties(vector<shared_ptr<Hitable>>& properties);
 
 int main(){
-    Renderer renderer(300, 200, Vec3f(0.0f, 0.0f, 0.0f));
+    Renderer renderer(900, 600, Vec3f(0.0f, 0.0f, 0.0f));
     Vec3f eye_pos(0.8f, 1.0f, -5.0f);
     vector<shared_ptr<Hitable>> obj_ptr;
 
@@ -14,7 +14,7 @@ int main(){
     renderer.LoadObjectPtr(obj_ptr);
     renderer.SetModelMatrix(2.0f, -40.0f, 0.0f);
     renderer.SetProjectionMatrix(90.0f, 1.5f, 1.0f, 50.0f);
-    renderer.MSAA(true, 1);
+    renderer.MSAA(true, 100);
 
     renderer.StartClock();
 
@@ -22,7 +22,7 @@ int main(){
 
     renderer.SetViewMatrix(eye_pos);
     renderer.VertexShader();
-    renderer.RayTracing(200);
+    renderer.RayTracing(100);
 
     renderer.GetTimeCost();
     renderer.ClearTimeCounter();

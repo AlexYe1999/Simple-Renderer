@@ -12,8 +12,10 @@ public:
     ~Texture(){};
 
 public:
-    Vec3f getColor(const float& u, const float& v) const;
-    bool IsValid() const{return is_texture_valid_;}
+    Vec3f GetColor(const float& u, const float& v) const;
+    int GetWidth() const{ return image_width_; }
+    int GetHeight() const{ return image_height_; }   
+    bool IsValid() const{ return is_texture_valid_; };
 private:
     bool is_texture_valid_; 
     int image_width_;

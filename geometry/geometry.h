@@ -182,7 +182,7 @@ struct Matrix3{
     inline Matrix4<T> toMatrix4() const {return Matrix4<T>(vec[0].toVec4(), vec[1].toVec4(), vec[2].toVec4(), Vec4f{0, 0, 0, 1});};
     template<typename> friend ostream& operator <<(ostream& os, const Matrix3<T>& m3);
     inline Matrix3<T> operator *(const T& n) const{return Matrix3<T>(vec[0] * n, vec[1] * n, vec[2] * n);}
-    inline Vec3<T> operator*(const Vec3<T>& vec3){
+    inline Vec3<T> operator*(const Vec3<T>& vec3) const{
         return Vec3<T>{
             vec[0].x * vec3.x + vec[1].x * vec3.y + vec[2].x * vec3.z,
             vec[0].y * vec3.x + vec[1].y * vec3.y + vec[2].y * vec3.z,
@@ -207,12 +207,12 @@ struct Matrix3{
         };
         return Matrix3<T>(vec1, vec2, vec3);
     }    
-    inline T det()const {
+    inline T det() const{
         return T(vec[0].x*vec[1].y*vec[2].z + vec[0].z*vec[1].x*vec[2].y + vec[0].y*vec[1].z*vec[2].x
                          - vec[0].z*vec[1].y*vec[2].x - vec[0].y*vec[1].x*vec[2].z - vec[0].x*vec[1].z*vec[2].y);
     }
-    inline Matrix3<T> inversed(){
-        T A_det =1.0f / det();
+    inline Matrix3<T> inversed() const{
+        T A_det = 1.0f / det();
         T a_00 = vec[1].y*vec[2].z - vec[2].y*vec[1].z;
         T a_01 = vec[2].y*vec[0].z - vec[0].y*vec[2].z;
         T a_02 = vec[0].y*vec[1].z - vec[1].y*vec[0].z;
@@ -229,7 +229,7 @@ struct Matrix3{
         };
         return matrix * A_det;
     }
-    inline Matrix3<T> transposed(){
+    inline Matrix3<T> transposed() const{
         return Matrix3<T>{
             {vec[0].x, vec[1].x, vec[2].x},
             {vec[0].y, vec[1].y, vec[2].y},
@@ -257,9 +257,25 @@ struct Matrix2{
             vec[0].x * m2.vec[1].x + vec[1].x * m2.vec[1].y,
             vec[0].y * m2.vec[1].x + vec[1].y * m2.vec[1].y
         };
-        
         return Matrix2<T>(vec2, vec3);
-    }    
+    }
+    inline T det() const{
+        return T(vec[0].x * vec[1].y - vec[0].y * vec[0].x);
+    }
+    inline Matrix2<T> inversed() const{
+        float A_det = 1.0f / det();
+        return Matrix2<T>{
+            {vec[1].y / A_det, vec[0].y / A_det},
+            {vec[1].x / A_det, vec[0].x / A_det}
+        };
+    }
+    inline Matrix2<T> transposed() const{
+        return Matrix2<T>{
+            {vec[0].x, vec[1].x},
+            {vec[0].y, vec[1].y}
+        };
+    }
+
 };
 
 typedef Matrix2<int> Matrix2i;

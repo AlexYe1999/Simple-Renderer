@@ -25,9 +25,9 @@ int main(int argc, char* argv[]){
         Vec3f(0.0f,1.0f,0.0f),Vec3f(0.0f,1.0f,0.0f)
     };
     renderer.LoadRectangle(vertices, normals);
-    renderer.SetShader(make_shared<TextureShader>());   
+    renderer.SetShader(make_shared<BumpShader>());   
     renderer.LoadLightSource(lights); 
-    renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
+    renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/hmap.jpg");
     renderer.RenderModel(true);
     renderer.MSAA(false);
     Vec3f eye_pos(0.0f, 0.0f, -4.0f);

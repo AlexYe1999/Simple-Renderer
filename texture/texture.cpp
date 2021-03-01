@@ -25,7 +25,7 @@ Texture::Texture(const string& texture_name)
 }
 
 
-Vec3f Texture::getColor(const float& u, const float& v) const{
+Vec3f Texture::GetColor(const float& u, const float& v) const{
     if(u > 1.0f || v > 1.0f || u < 0.0f || v < 0.0f){
         return Vec3f();
     }

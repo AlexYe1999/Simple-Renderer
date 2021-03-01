@@ -11,13 +11,13 @@ using namespace std;
 struct FragmentShaderPayload{
     Vec3f position;
     Vec3f color;
+    Vec3f texture;
     Vec3f normal;
-    Vec2f tex_coord;
-    shared_ptr<Texture> texture;
+    Matrix3f TBN;
     FragmentShaderPayload(
-        const Vec3f& _position, const Vec3f& _color, const Vec3f& _normal,
-        const Vec2f& _tex_coord, const shared_ptr<Texture>& _texture
-    ) : position(_position), color(_color), normal(_normal), tex_coord(_tex_coord), texture(_texture){}
+        const Vec3f& _position, const Vec3f& _color, 
+        const Vec3f& _texture, const Vec3f& _normal, const Matrix3f& _TBN
+    ) : position(_position), color(_color), texture(_texture), normal(_normal), TBN(_TBN){}
 };
     
 class IShader{

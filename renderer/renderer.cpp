@@ -529,7 +529,28 @@ bool Renderer::RenderTriangles(const Triangle& triangle){
                     Vec3f pos(triangle.vertices_world[0] * barycentric.x + triangle.vertices_world[1] * barycentric.y + triangle.vertices_world[2] * barycentric.z);
                     Vec3f normal(normals[0] * barycentric.x + normals[1] * barycentric.y + normals[2] * barycentric.z);
                     Vec3f color(1.0f, 1.0f, 1.0f);
-                    FragmentShaderPayload payload(pos, color, normal, uv_interpolated, triangle.texture_ptr);
+                    Vec3f texture = triangle.texture_ptr ?
+                        triangle.texture_ptr->GetColor(uv_interpolated.u, uv_interpolated.v) : color;
+                    Matrix2f st = {
+                        uv[0] - uv_interpolated,
+                        uv[1] - uv_interpolated
+                    };
+                    Vec3f vec1 = vertex[0] - pos;
+                    Vec3f vec2 = vertex[1] - pos;
+                    st = st.inversed();
+                    Matrix3f TBN;
+                    TBN.vec[0] = {
+                        st.vec[0].x * vec1.x + st.vec[1].x * vec2.x,
+                        st.vec[0].x * vec1.y + st.vec[1].x * vec2.y,
+                        st.vec[0].x * vec1.z + st.vec[1].x * vec2.z
+                    };
+                    TBN.vec[1] = {
+                        st.vec[0].y * vec1.x+ st.vec[1].y * vec2.x,
+                        st.vec[0].y * vec1.y+ st.vec[1].y * vec2.y,
+                        st.vec[0].y * vec1.z+ st.vec[1].y * vec2.z
+                    };
+                    TBN.vec[2] = normal;
+                    FragmentShaderPayload payload(pos, color, texture, normal, TBN);
                     color = shader_ptr_->FragmentShader(payload);
                     SetPixel(x, y, color * weight);
                 }

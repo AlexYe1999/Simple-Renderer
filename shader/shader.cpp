@@ -50,9 +50,7 @@ Vec3f TextureShader::FragmentShader(const FragmentShaderPayload& payload){
     const float p = 150;
     Vec3f dst_color(0.0f, 0.0f, 0.0f);
     Vec3f Ka(0.005f, 0.005f, 0.005f);
-    Vec3f Kd = payload.texture
-        ? payload.texture->GetColor(payload.tex_coord.u, payload.tex_coord.v) 
-        : payload.color;
+    Vec3f Kd = payload.texture;
     Vec3f Ks(0.7f, 0.7f, 0.7f);
     Vec3f pos = payload.position;
     Vec3f normal = payload.normal; 
@@ -74,20 +72,13 @@ Vec3f BumpShader::FragmentShader(const FragmentShaderPayload& payload){
     const float p = 150;
     Vec3f dst_color(0.0f, 0.0f, 0.0f);
     Vec3f Ka(0.005f, 0.005f, 0.005f);
-    Vec3f Kd = payload.texture
-        ? payload.texture->GetColor(payload.tex_coord.u, payload.tex_coord.v) 
-        : payload.color;
+    Vec3f Kd = payload.color;
     Vec3f Ks(0.7f, 0.7f, 0.7f);
     Vec3f pos = payload.position;
     Vec3f normal = payload.normal; 
     Vec3f pos2eye = eye_pos_ - pos;
 
-	float u = payload.tex_coord.u;
-	float v = payload.tex_coord.v;
-    float width = payload.texture->GetWidth();
-    float height = payload.texture->GetHeight();
-
-
+    normal = payload.TBN * payload.texture;
 
     for(const LightSource& light : lights_){
         Vec3f light_intensity = light.intensity;

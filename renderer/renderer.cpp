@@ -92,7 +92,7 @@ void Renderer::ShowImage(std::string window_name, const unsigned short delay_ms)
 
 void Renderer::SaveImage(const std::string& filename){
     cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
-    cv::cvtColor(image, image, CV_RGB2BGR);
+    //cv::cvtColor(image, image, CV_RGB2BGR);
     cv::imshow("Rendering", image);
     cv::waitKey(3);      
     cout<<"\nPush 's to save image or push 'q' to quit\n";
@@ -135,8 +135,8 @@ bool Renderer::Rendering(){
             triangle.vertices_camera[1],
             triangle.vertices_camera[2]
         };
-        if(is_render_models_){
-            RenderTriangles(triangle);            
+        if(is_render_models_ && !triangle.is_triangle_culled_){
+            RenderTriangles(triangle);
         }
         if(is_render_verties_){
             Vec3f v0(rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f, rand() % 256 * 1.0f / 255.0f);
@@ -337,6 +337,9 @@ bool Renderer::VertexShader(){
             };
             triangle.vertices_camera[i] = v3;
         }
+        Vec3f v1 = triangle.vertices_camera[1] - triangle.vertices_camera[0];
+        Vec3f v2 = triangle.vertices_camera[2] - triangle.vertices_camera[1];
+        triangle.is_triangle_culled_ = v1.cross(v2).z > 0.0f ? true : false;
     }
 
     return true;

@@ -34,10 +34,15 @@ public:
 
 class Triangle : public Shape{
 public:
-    Triangle(shared_ptr<Texture> texture = nullptr):vertices_world(),vertices_camera(),colors(),normals(),texture_coords(),texture_ptr(texture){};
+    Triangle(shared_ptr<Texture> texture = nullptr)
+        : 
+        is_triangle_culled_(false), 
+        vertices_world(),vertices_camera(),colors(),
+        normals(),texture_coords(),texture_ptr(texture){};
     ~Triangle(){};
 
 public:
+    bool is_triangle_culled_;
     std::array<Vec3f, 3> vertices_world;
     std::array<Vec3f, 3> vertices_camera;
     std::array<Vec3f, 3> normals;

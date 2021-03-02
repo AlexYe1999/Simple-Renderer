@@ -1,0 +1,2 @@
+G:\mingw64\bin\ar.exe qc libRenderer.a CMakeFiles/Renderer.dir/renderer.cpp.obj
+G:\mingw64\bin\ranlib.exe libRenderer.a

@@ -1,2 +1,0 @@
-G:\mingw64\bin\ar.exe qc libGeometry.a CMakeFiles/Geometry.dir/shape.cpp.obj
-G:\mingw64\bin\ranlib.exe libGeometry.a

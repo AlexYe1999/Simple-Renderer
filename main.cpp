@@ -1,10 +1,10 @@
-#include"renderer/renderer.h"
+#include"renderer/renderer.hpp"
 #include<iostream>
 #include<vector>
 using namespace LemonCube;
 
 int main(int argc, char* argv[]){
-    Renderer renderer(500, 500, Vec3f(0.0f, 0.0f, 0.0f));
+    Renderer<float> renderer(500, 500, Vec3f(0.0f, 0.0f, 0.0f));
     vector<LightSource> lights{
         {Vec3f(0, 3, 0),Vec3f(1.0f, 1.0f, 1.0f)},
         {Vec3f(0, 3, -5),Vec3f(1.0f, 1.0f, 1.0f)},
@@ -25,8 +25,8 @@ int main(int argc, char* argv[]){
         Vec3f(0.0f,1.0f,0.0f),Vec3f(0.0f,1.0f,0.0f)
     };
     renderer.LoadRectangle(vertices, normals);
-    renderer.SetShader(make_shared<TextureShader>());   
-    renderer.LoadLightSource(lights); 
+    renderer.SetShader(make_shared<TextureShader<float>>());   
+    renderer.LoadLightSource(lights);
     renderer.LoadModel("../test_model/cow/cow.obj", "../test_model/cow/cow.png");
     renderer.RenderModel(true);
     renderer.MSAA(false);

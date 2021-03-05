@@ -1,7 +1,97 @@
-#ifdef SHADER_CPP
-#include"shader.h"
+#ifndef SHADER_H_
+#define SHADER_H_
+#include"../geometry/geometry.h"
+#include"../texture/texture.h"
+#include"../object/object.h"
+#include<vector>
 #include<memory>
 namespace LemonCube{
+using namespace std;
+
+template <typename T>
+struct FragmentShaderPayload{
+    Vec3<T> position;
+    Vec3<T> color;
+    Vec3<T> texture;
+    Vec3<T> normal;
+    Matrix3<T> TBN;
+    FragmentShaderPayload(
+        const Vec3<T>& _position, const Vec3<T>& _color, 
+        const Vec3<T>& _texture, const Vec3<T>& _normal, const Matrix3<T>& _TBN
+    ) : position(_position), color(_color), texture(_texture), normal(_normal), TBN(_TBN){}
+};
+    
+template <typename T>
+class IShader{
+public:
+    IShader();
+    virtual ~IShader();
+
+public:
+    bool SetEyePosition(const Vec3<T>& eye_pos);
+    bool SetLights(const vector<LightSource>& lights);
+
+public:
+    virtual Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+
+protected:
+    Vec3<T> eye_pos_;
+    vector<LightSource> lights_;
+};
+
+template <typename T>
+class NormalShader : public IShader<T>{
+public:
+    NormalShader();
+    ~NormalShader();
+
+public:
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+
+};
+
+template <typename T>
+class PhongShader : public IShader<T>{
+public:  
+    PhongShader();
+    ~PhongShader();
+
+public:
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+
+};
+
+template <typename T>
+class TextureShader : public IShader<T>{
+public:
+    TextureShader();
+    ~TextureShader();
+    
+public:
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+
+};
+
+template <typename T>
+class BumpShader : public IShader<T>{
+public:
+    BumpShader();
+    ~BumpShader();
+
+public:
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+};
+
+template <typename T>
+class DisplacementShader : public IShader<T>{
+public:
+    DisplacementShader();
+    ~DisplacementShader();
+
+public:
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+};
+
 
 template<typename T>
 IShader<T>::IShader(){}
@@ -118,7 +208,5 @@ Vec3<T> DisplacementShader<T>::FragmentShader(const FragmentShaderPayload<T>& pa
 
 }
 
-
-} 
-
+}
 #endif

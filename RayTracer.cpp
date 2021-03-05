@@ -6,7 +6,7 @@ using namespace LemonCube;
 void SetProperties(vector<shared_ptr<Hitable>>& properties);
 
 int main(){
-    Renderer renderer(900, 600, Vec3f(0.0f, 0.0f, 0.0f));
+    Renderer<float> renderer(900, 600, Vec3f(0.0f, 0.0f, 0.0f));
     Vec3f eye_pos(0.8f, 1.0f, -5.0f);
     vector<shared_ptr<Hitable>> obj_ptr;
 

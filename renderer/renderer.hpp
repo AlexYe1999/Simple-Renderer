@@ -1,7 +1,126 @@
-#ifdef Renderer_CPP
-#include"renderer.hpp"
-#include<cstdlib>
+#pragma once
+#include"../model/model.h"
+#include"../shader/shader.hpp"
+#include"../geometry/shape.h"
+#include"../texture/texture.h"
+#include"../hitable_list/hitable_list.hpp"
+#include<string>
+#include<opencv2/opencv.hpp>
+
 namespace LemonCube{
+using namespace std;
+template<typename T>
+class Renderer{
+public:
+    Renderer(const unsigned int& width, const unsigned int& height, const Vec3<T>& background_color);
+    ~Renderer();
+
+public:
+    void StartClock();
+    void StopClock();
+    void ClearTimeCounter();
+    void GetTimeCost();
+    
+public:
+    void ShowImage(string window_name, const unsigned short delay_ms);
+    void SaveImage(const std::string& filename);
+    void ClearCanvas();
+
+public:
+    bool Rendering();
+    bool RayTracing(const unsigned int& bounce_times = 20);
+
+public:
+    void MSAA(const bool& is_open, const unsigned int sample_rate = 1){is_MSAA_open_ = is_open; sample_rate_ = sample_rate;}
+    void ShowProcessing(bool is_open){is_showing_rendering = is_open;}
+    bool RenderModelVerties(const bool& is_render_verties){is_render_verties_ = is_render_verties; return true;}
+    bool RenderModelEdges(const bool& is_render_edges){ is_render_edges_ = is_render_edges;return true;}
+    bool RenderModelNormals(const bool& is_render_normals){is_render_normals_ = is_render_normals;return true;}
+    bool RenderModel(const bool& is_render_models){is_render_models_ = is_render_models;return true;}
+
+public:
+    bool SetShader(const shared_ptr<IShader<T>>& shader);
+
+public:
+    bool LoadModel(const string& filename, const string& texture_name);
+    bool LoadPoint(const Point<T>& point);
+    bool LoadPoint(const vector<Point<T>>& points);
+    bool LoadLine(const Line<T>& line);
+    bool LoadLine(const vector<Line<T>>& lines);
+    bool ClearLine();
+    bool LoadTriangle(const Triangle<T>& Triangle);    
+    bool LoadTriangle(const vector<Triangle<T>>& Triangles);
+    bool LoadRectangle(const array<Vec3<T>,4>& vertices, const array<Vec3<T>,4>& normals);
+    bool LoadRectangle(const vector<array<Vec3<T>,4>>& rectangles);
+    bool LoadLightSource(const vector<LightSource>& lights);
+    bool LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs);
+
+public:
+    bool VertexShader();
+    void SetModelMatrix(const T& x_axis, const T& y_axis, const T& z_axis);
+    void SetViewMatrix(const Vec3<T>& eye_pos);
+    void SetProjectionMatrix(const T& eye_fov, const T& aspect_ratio, const T& zNear, const T& zFar);
+
+public:
+    bool SetPixel(const unsigned int& x, const unsigned int& y, const Vec3<T>& color);
+    bool Draw2DLine(Vec2i p1, Vec2i p2, const  Vec3<T>& color1, const Vec3<T>& color2);
+    bool DrawLine(Vec3<T> p1, Vec3<T> p2, const  Vec3<T>& color1, const Vec3<T>& color2);
+    bool RenderTriangles(const Triangle<T>& triangle);
+
+private:
+    void FindBoundingBox(const array<Vec3<T>, 3>& vertices, Vec2<T> bbox[2]);
+    bool IsInsideTriangle(const array<Vec3<T>, 3>& vertices, const Vec2<T>& pixel);
+    inline Vec3<T> BarycentricInterpolation(const array<Vec3<T>, 3>& vertex, const Vec2<T>& pixel);
+    inline Vec3<T> GetRayVector(const T& x, const T& y);
+    Vec3<T> GetRayColor(const Ray& ray, const unsigned int step = 10);
+
+private:
+    const  double time_per_tick_;
+    bool is_clock_running_;
+    bool is_showing_rendering;
+    bool is_MSAA_open_;
+    int64 start_time_;
+    int64 end_time_;
+    int64 duration_;
+
+private: 
+    const unsigned int canvas_width_;
+    const unsigned int canvas_height_;
+    Vec3<T> background_color_;
+    Vec3<T>* frame_buffer_;
+    T* z_buffer_;
+
+private:
+    bool is_render_verties_;
+    bool is_render_edges_;
+    bool is_render_normals_;
+    bool is_render_models_;
+
+private:
+    T eye_fov_;
+    T aspect_ratio_;
+    T view_port_width_half_;
+    T view_port_height_half_;
+    T z_near_;
+    T z_far_;
+    Vec3<T> eye_pos_;
+    Matrix4<T> model_matrix_;
+    Matrix4<T> view_matrix_;
+    Matrix4<T> projection_matrix_;
+
+private:
+    vector<Point<T>> points_;
+    vector<Line<T>> lines_;
+    vector<Triangle<T>> triangles_;
+    vector<LightSource> lights_;
+    shared_ptr<IShader<T>> shader_ptr_;
+
+private:
+    unsigned int sample_rate_;
+    HitableList hitable_list_;
+    Matrix3<T> view_port_cord_;
+
+};
 
 template<typename T>
 Renderer<T>::Renderer(const unsigned int& width, const unsigned int& height, const Vec3<T>& background_color)
@@ -662,4 +781,3 @@ Vec3<T> Renderer<T>::GetRayColor(const Ray& ray, const unsigned int step){
 }
 
 }
-#endif

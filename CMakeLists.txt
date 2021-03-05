@@ -6,7 +6,6 @@ project(RayTracer)
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 #set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
 
-add_subdirectory(geometry)
 add_subdirectory(renderer)
 add_subdirectory(model)
 add_subdirectory(shader)
@@ -19,7 +18,6 @@ set(STATIC_LIB
     Renderer
     Model
     Shader
-    Geometry
     Texture
     Object
     Hitable_List

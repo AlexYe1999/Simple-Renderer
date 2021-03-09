@@ -4,7 +4,7 @@ A simple rederer only use Opencv
 
 ## Output:  
 
-* Phong Shading(Phong)
+* Phong Shading
   ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/PhongShading.gif)
 * Texture Mapping(Phong)
   ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/TextureShading.gif)

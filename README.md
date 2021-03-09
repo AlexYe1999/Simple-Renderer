@@ -2,7 +2,17 @@
 
 A simple rederer only use Opencv
 
-Reference：
+## Output:  
+
+* Phong Shading(Phong)
+  ![image](image/PhongShading.gif)
+* Texture Mapping(Phong)
+  ![image](image/TextureShading.gif)
+* Bump Mapping(Phong)
+  ![image](image/BumpShading.gif)
+* Path Tracing
+  ![image](image/output0.jpg)
+## Reference:
 
 * Games101 -Lingqi Yan
 

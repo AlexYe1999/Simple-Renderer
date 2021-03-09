@@ -46,7 +46,7 @@ public:
     ~NormalShader();
 
 public:
-    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload) override;
 
 };
 
@@ -57,7 +57,7 @@ public:
     ~PhongShader();
 
 public:
-    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload) override;
 
 };
 
@@ -68,7 +68,7 @@ public:
     ~TextureShader();
     
 public:
-    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload) override;
 
 };
 
@@ -79,7 +79,7 @@ public:
     ~BumpShader();
 
 public:
-    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload) override;
 };
 
 template <typename T>
@@ -89,7 +89,7 @@ public:
     ~DisplacementShader();
 
 public:
-    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload);
+    Vec3<T> FragmentShader(const FragmentShaderPayload<T>& payload) override;
 };
 
 

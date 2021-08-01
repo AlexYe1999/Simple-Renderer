@@ -55,5 +55,38 @@ LightSource::LightSource(const Vec3f& _position, const Vec3f& _intensity)
 {}
 LightSource::~LightSource(){}
 
+ShadowLight::ShadowLight(const Vec3f& _position, const Vec3f& _intensity, const Vec3f& _lookat, const int _buffer_size)
+    : 
+    LightSource(_position, _intensity),
+    lookat_(_lookat),
+    buffer_size_(_buffer_size),
+    Shadow_view_(),
+    depth_buffer_(new float[_buffer_size*_buffer_size]){
+
+    Vec3f z = (_lookat - _position).normalized();
+    Vec3f y = Vec3f(0.0f,1.0f,0.0f);
+    Vec3f x = y.cross(z).normalized();
+    y = z.cross(x).normalized();
+    Matrix3f mat3(x, y, z);
+    mat3 = mat3.inversed();
+    Shadow_view_ = mat3.toMatrix4();
+
+    Matrix4f mat4 = {
+        Vec4f(1.0f, 0.0f, 0.0f, 0.0f),
+        Vec4f(0.0f, 1.0f, 0.0f, 0.0f),
+        Vec4f(0.0f, 0.0f, 1.0f, 0.0f),
+        (_position * -1.0f).toVec4(1.0f) 
+    };
+
+    Shadow_view_ = Shadow_view_ * mat4;
+
+    for(int i = 0;i < _buffer_size*_buffer_size; i++){
+        depth_buffer_[i] = numeric_limits<float>::max();
+    }
+
+} 
+
+ShadowLight::~ShadowLight(){}
+
 
 }

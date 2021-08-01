@@ -5,6 +5,7 @@
 #include"../texture/texture.h"
 #include"../hitable_list/hitable_list.hpp"
 #include<string>
+#include<memory>
 #include<opencv2/opencv.hpp>
 
 namespace LemonCube{
@@ -23,6 +24,7 @@ public:
     
 public:
     void ShowImage(string window_name, const unsigned short delay_ms);
+    void ShowShadowMap(const float* buffer, std::string window_name, const unsigned short delay_ms, const int buffer_size);
     void SaveImage(const std::string& filename);
     void ClearCanvas();
 
@@ -52,7 +54,7 @@ public:
     bool LoadTriangle(const vector<Triangle<T>>& Triangles);
     bool LoadRectangle(const array<Vec3<T>,4>& vertices, const array<Vec3<T>,4>& normals);
     bool LoadRectangle(const vector<array<Vec3<T>,4>>& rectangles);
-    bool LoadLightSource(const vector<LightSource>& lights);
+    bool LoadLightSource(const vector<shared_ptr<LightSource>>& lights);
     bool LoadObjectPtr(const vector<shared_ptr<Hitable>>& obj_ptrs);
 
 public:
@@ -66,9 +68,10 @@ public:
     bool Draw2DLine(Vec2i p1, Vec2i p2, const  Vec3<T>& color1, const Vec3<T>& color2);
     bool DrawLine(Vec3<T> p1, Vec3<T> p2, const  Vec3<T>& color1, const Vec3<T>& color2);
     bool RenderTriangles(const Triangle<T>& triangle);
+    bool RanderShadowMap(const Triangle<T>& triangle, ShadowLight* light_ptr);
 
 private:
-    void FindBoundingBox(const array<Vec3<T>, 3>& vertices, Vec2<T> bbox[2]);
+    void FindBoundingBox(const array<Vec3<T>, 3>& vertices, Vec2<T> bbox[2], int width, int height);
     bool IsInsideTriangle(const array<Vec3<T>, 3>& vertices, const Vec2<T>& pixel);
     inline Vec3<T> BarycentricInterpolation(const array<Vec3<T>, 3>& vertex, const Vec2<T>& pixel);
     inline Vec3<T> GetRayVector(const T& x, const T& y);
@@ -112,7 +115,6 @@ private:
     vector<Point<T>> points_;
     vector<Line<T>> lines_;
     vector<Triangle<T>> triangles_;
-    vector<LightSource> lights_;
     shared_ptr<IShader<T>> shader_ptr_;
 
 private:
@@ -144,7 +146,6 @@ Renderer<T>::Renderer(const unsigned int& width, const unsigned int& height, con
     view_port_width_half_(0.0f), view_port_height_half_(0.0f),
     z_near_(-1.0f),z_far_(500.0f),
     model_matrix_(),view_matrix_(),projection_matrix_(),
-    lights_(),
     shader_ptr_(make_shared<IShader<float>>()),
     sample_rate_(1),
     hitable_list_(),
@@ -197,6 +198,20 @@ void Renderer<T>::GetTimeCost(){
 }
 
 template<typename T>
+void Renderer<T>::ShowShadowMap(const float* buffer, std::string window_name, const unsigned short delay_ms, const int buffer_size){
+    StopClock();
+    float *p = new float[buffer_size*buffer_size];
+    memcpy(p, buffer, buffer_size*buffer_size);
+    cv::Mat image(buffer_size, buffer_size, CV_32FC1, p);
+    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+    cv::namedWindow(window_name);
+    imshow(window_name, image);
+    cv::waitKey(delay_ms);
+    delete[] p;
+    StartClock();
+}
+
+template<typename T>
 void Renderer<T>::ShowImage(std::string window_name, const unsigned short delay_ms){
     StopClock();
     cv::Mat image(canvas_height_, canvas_width_, CV_32FC3, frame_buffer_);
@@ -233,7 +248,7 @@ void Renderer<T>::ClearCanvas(){
     unsigned int z_buffer_size = canvas_width_ * canvas_height_;    
     for(int i = 0;i < z_buffer_size; i++){
         frame_buffer_[i] = background_color_;
-        z_buffer_[i] = z_far_;
+        z_buffer_[i] = numeric_limits<float>::max();;
     }
 
 }
@@ -248,6 +263,18 @@ bool Renderer<T>::Rendering(){
     }
 
     unsigned int triangles_num = triangles_.size();
+    if(is_render_models_){
+        for(auto light : shader_ptr_->GetAllLight()){
+            auto shadow_light = dynamic_cast<ShadowLight*>(light.get());
+            if(shadow_light != nullptr){
+                for(unsigned int index = 0; index < triangles_num; index++){
+                    Triangle<T>& triangle = triangles_[index];
+                    RanderShadowMap(triangle, shadow_light);                     
+                }
+            }
+        }
+    }
+
     for(unsigned int index = 0; index < triangles_num; index++){
         Triangle<T>& triangle = triangles_[index];
         Vec3<T> vertex[3]{
@@ -434,7 +461,7 @@ bool Renderer<T>::LoadRectangle(const vector<array<Vec3<T>,4>>& rectangles){
 }
 
 template<typename T>
-bool Renderer<T>::LoadLightSource(const vector<LightSource>& lights){
+bool Renderer<T>::LoadLightSource(const vector<shared_ptr<LightSource>>& lights){
     shader_ptr_->SetLights(lights);
     return true;
 }
@@ -633,13 +660,14 @@ bool Renderer<T>::DrawLine(Vec3<T> p1, Vec3<T> p2, const Vec3<T>& color1, const 
 
     return true;
 }
+
 template<typename T>
 bool Renderer<T>::RenderTriangles(const Triangle<T>& triangle){
     Vec2f bbox[2];
     const array<Vec3<T>, 3>& vertex = triangle.vertices_camera;
     const array<Vec3<T>, 3>& normals = triangle.normals;
     const array<Vec2f, 3>& uv = triangle.texture_coords;
-    FindBoundingBox(vertex, bbox);
+    FindBoundingBox(vertex, bbox, canvas_width_, canvas_height_);
     int max_x = static_cast<int>(bbox[1].x)+1;
     int max_y = static_cast<int>(bbox[1].y)+1;
     for(int y = bbox[0].y; y < max_y; y++){
@@ -700,8 +728,43 @@ bool Renderer<T>::RenderTriangles(const Triangle<T>& triangle){
     }
     return true;
 }
+
 template<typename T>
-void Renderer<T>::FindBoundingBox(const array<Vec3<T>,3>& vertex, Vec2<T> bbox[2]){
+bool Renderer<T>::RanderShadowMap(const Triangle<T>& triangle, ShadowLight* light_ptr){
+    array<Vec3f, 3> vertex = {
+        (light_ptr->Shadow_view_*triangle.vertices_world[0].toVec4(1.0f)).toVec3(),
+        (light_ptr->Shadow_view_*triangle.vertices_world[1].toVec4(1.0f)).toVec3(),
+        (light_ptr->Shadow_view_*triangle.vertices_world[2].toVec4(1.0f)).toVec3()
+    };
+    vertex[0] = vertex[0]*0.5f+Vec3f(0.5f, 0.5f, 0.0f);
+    vertex[1] = vertex[1]*0.5f+Vec3f(0.5f, 0.5f, 0.0f);
+    vertex[2] = vertex[2]*0.5f+Vec3f(0.5f, 0.5f, 0.0f);
+    vertex[0] = vertex[0]*static_cast<int>(light_ptr->buffer_size_);
+    vertex[1] = vertex[1]*static_cast<int>(light_ptr->buffer_size_);
+    vertex[2] = vertex[2]*static_cast<int>(light_ptr->buffer_size_);
+
+    Vec2f bbox[2];
+    FindBoundingBox(vertex, bbox, light_ptr->buffer_size_, light_ptr->buffer_size_);
+    auto z_buffer_ = light_ptr->depth_buffer_.get();
+    for(int y = bbox[0].y; y < bbox[1].y; y++){
+        for(int x = bbox[0].x; x < bbox[1].x; x++){
+            if(x < 0 || y < 0 || x >= light_ptr->buffer_size_ || y >= light_ptr->buffer_size_){
+                //cout<<"pos out of range of shadow map: "<<x<<" "<<y<<endl;
+                continue;
+            } 
+            if(IsInsideTriangle(vertex, Vec2f(x+0.5, y+0.5))){
+                Vec3<T> barycentric = BarycentricInterpolation(vertex, Vec2f(x+0.5f, y+0.5f));
+                float pixel_z = barycentric.x * vertex[0].z + barycentric.y * vertex[1].z + barycentric.z * vertex[2].z;
+                if(pixel_z > 0.0f && pixel_z < z_buffer_[(light_ptr->buffer_size_-1-y) * light_ptr->buffer_size_ + x]){
+                    z_buffer_[(light_ptr->buffer_size_-1-y)*light_ptr->buffer_size_+x] = pixel_z;
+                }
+            }
+        }
+    }
+}
+
+template<typename T>
+void Renderer<T>::FindBoundingBox(const array<Vec3<T>,3>& vertex, Vec2<T> bbox[2], int width, int height){
     bbox[0].x = vertex[2].x;
     bbox[0].y = vertex[2].y;
     bbox[1].x = vertex[2].x;
@@ -723,8 +786,8 @@ void Renderer<T>::FindBoundingBox(const array<Vec3<T>,3>& vertex, Vec2<T> bbox[2
     }
     if(vertex[0].x < 0.0f){bbox[0].x = 0.0f;}
     if(vertex[0].y < 0.0f){bbox[0].y = 0.0f;}
-    if(vertex[1].x > canvas_width_){bbox[1].x = canvas_width_;}
-    if(vertex[1].y > canvas_height_){bbox[1].y = canvas_height_;}
+    if(vertex[1].x > width){bbox[1].x = width;}
+    if(vertex[1].y > height){bbox[1].y = height;}
 
 }
 template<typename T>

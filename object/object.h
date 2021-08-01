@@ -69,7 +69,17 @@ public:
 public:
     Vec3f intensity;
 };
+class ShadowLight : public LightSource{
+public:
+    ShadowLight(const Vec3f& _position, const Vec3f& _intensity, const Vec3f& _lookat, const int _buffer_size);
+    ~ShadowLight();
 
+public:
+    int buffer_size_;
+    Vec3f lookat_;
+    Matrix4f Shadow_view_;
+    std::unique_ptr<float[]> depth_buffer_;
+};
 
 }
 

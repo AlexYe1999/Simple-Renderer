@@ -10,6 +10,9 @@ A simple rederer only use Opencv
   ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/TextureShading.gif)
 * Bump Mapping(Phong)
   ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/BumpShading.gif)
+* Shadow Mapping(Phong)
+  ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/ShadowMapping.gif)
+
 * Path Tracing
   ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/output0.jpg)
 

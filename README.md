@@ -5,16 +5,15 @@ A simple rederer only use Opencv
 ## Output:  
 
 * Phong Shading
-  ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/PhongShading.gif)
+![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/PhongShading.gif)
 * Texture Mapping(Phong)
-  ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/TextureShading.gif)
+![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/TextureShading.gif)
 * Bump Mapping(Phong)
-  ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/BumpShading.gif)
+![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/BumpShading.gif)
 * Shadow Mapping(Phong)
-  ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/ShadowMapping.gif)
-
+![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/ShadowMapping.gif)
 * Path Tracing
-  ![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/output0.jpg)
+![image](https://github.com/LemonCubeQAQ/Simple-Renderer/blob/master/image/output0.jpg)
 
 ## Reference:  
 
